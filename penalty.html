@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Gamer Hub - Penalty Shootout</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; overflow: hidden; }
+  .stats { display: flex; gap: 2em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.4em 0; }
+  canvas {
+    border-radius: 12px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+    max-width: 92vw;
+    max-height: 50vh;
+    background: #3a9d23;
+  }
+  .message {
+    min-height: 1.6em;
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-weight: bold;
+    margin: 0.4em 0;
+  }
+  .aim-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 8px;
+    width: min(92vw, 320px);
+    margin: 0.4em 0 0.8em;
+  }
+  .aim-grid button {
+    font-size: 1.6rem;
+    padding: 0.6em 0;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.6);
+    color: var(--dark);
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+  }
+  .aim-grid button:active { transform: translateY(2px); box-shadow: none; }
+  .aim-grid button:disabled { opacity: 0.5; cursor: default; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13,27,42,0.6);
+    color: #fff;
+    text-align: center;
+    padding: 1em;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h1 { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .overlay p { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
+  .player-pick { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 1em; }
+  .player-card {
+    background: rgba(255,255,255,0.12);
+    border: 3px solid transparent;
+    border-radius: 16px;
+    padding: 1em 1.4em;
+    cursor: pointer;
+    color: #fff;
+    min-width: 140px;
+  }
+  .player-card:hover { border-color: var(--accent); }
+  .player-card .jersey {
+    width: 64px; height: 64px;
+    border-radius: 12px;
+    margin: 0 auto 0.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: bold;
+  }
+  .ronaldo .jersey { background: linear-gradient(135deg, #d52b1e 50%, #046a38 50%); }
+  .messi .jersey { background: repeating-linear-gradient(90deg, #75aadb 0 10px, #fff 10px 20px); color: #333; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back-link" href="index.html">← Hub</a>
+    <h1>PENALTY SHOOTOUT</h1>
+    <span class="spacer"></span>
+  </div>
+
+  <div class="stats">
+    <span id="player-label">Player</span>
+    <span>Round: <span id="round">1</span>/5</span>
+    <span>Score: <span id="score">0</span></span>
+  </div>
+
+  <canvas id="game" width="360" height="420"></canvas>
+  <div class="message" id="message">Pick where to aim!</div>
+  <div class="aim-grid" id="aim-grid">
+    <button data-zone="0">↖</button>
+    <button data-zone="1">↑</button>
+    <button data-zone="2">↗</button>
+    <button data-zone="3">↙</button>
+    <button data-zone="4">↓</button>
+    <button data-zone="5">↘</button>
+  </div>
+
+  <div class="credit">Made by Atharv Tripathi</div>
+
+  <div class="overlay" id="pick-screen">
+    <h1>PENALTY SHOOTOUT</h1>
+    <p>Choose your player, then pick a corner to shoot at the goalkeeper.</p>
+    <p>5 penalties &mdash; how many can you score?</p>
+    <div class="player-pick">
+      <div class="player-card ronaldo" data-name="Ronaldo" data-number="7" data-color="#d52b1e">
+        <div class="jersey">7</div>
+        <div>Ronaldo</div>
+      </div>
+      <div class="player-card messi" data-name="Messi" data-number="10" data-color="#75aadb">
+        <div class="jersey">10</div>
+        <div>Messi</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="result-screen">
+    <h1 id="result-title">RESULT</h1>
+    <p id="result-text">Score: 0/5</p>
+    <button class="btn" id="restart-btn">Play Again</button>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pickScreen = document.getElementById('pick-screen');
+  const resultScreen = document.getElementById('result-screen');
+  const resultTitle = document.getElementById('result-title');
+  const resultText = document.getElementById('result-text');
+  const restartBtn = document.getElementById('restart-btn');
+  const playerLabel = document.getElementById('player-label');
+  const roundEl = document.getElementById('round');
+  const scoreEl = document.getElementById('score');
+  const messageEl = document.getElementById('message');
+  const aimButtons = [...document.querySelectorAll('#aim-grid button')];
+
+  const ROUNDS = 5;
+  let player = { name: 'Ronaldo', number: 7, color: '#d52b1e' };
+  let round, score, animating;
+
+  // Goal rectangle within canvas
+  const goal = { x: W * 0.12, y: H * 0.08, w: W * 0.76, h: H * 0.32 };
+  // 6 zones: 3 columns x 2 rows
+  function zoneCenter(z) {
+    const col = z % 3, row = Math.floor(z / 3);
+    const cw = goal.w / 3, rh = goal.h / 2;
+    return {
+      x: goal.x + cw * (col + 0.5),
+      y: goal.y + rh * (row + 0.5),
+    };
+  }
+
+  const spot = { x: W * 0.5, y: H * 0.78 };
+
+  document.querySelectorAll('.player-card').forEach(card => {
+    card.addEventListener('click', () => {
+      player = {
+        name: card.dataset.name,
+        number: card.dataset.number,
+        color: card.dataset.color,
+      };
+      pickScreen.classList.add('hidden');
+      playerLabel.textContent = player.name + ' (#' + player.number + ')';
+      startMatch();
+    });
+  });
+
+  function startMatch() {
+    round = 1;
+    score = 0;
+    roundEl.textContent = round;
+    scoreEl.textContent = score;
+    messageEl.textContent = 'Pick where to aim!';
+    drawScene(spot, null, null);
+    setButtonsEnabled(true);
+  }
+
+  function setButtonsEnabled(enabled) {
+    aimButtons.forEach(b => b.disabled = !enabled);
+  }
+
+  function drawScene(ballPos, keeperZone, flashColor) {
+    // pitch
+    ctx.fillStyle = '#3a9d23';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent';
+      ctx.fillRect(0, (H / 6) * i, W, H / 6);
+    }
+
+    // goal net
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 8; i++) {
+      const x = goal.x + (goal.w / 8) * i;
+      ctx.beginPath(); ctx.moveTo(x, goal.y); ctx.lineTo(x, goal.y + goal.h); ctx.stroke();
+    }
+    for (let i = 1; i < 4; i++) {
+      const y = goal.y + (goal.h / 4) * i;
+      ctx.beginPath(); ctx.moveTo(goal.x, y); ctx.lineTo(goal.x + goal.w, y); ctx.stroke();
+    }
+    // posts
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+
+    // goalkeeper
+    const kPos = keeperZone !== null ? zoneCenter(keeperZone) : { x: goal.x + goal.w / 2, y: goal.y + goal.h / 2 };
+    drawPerson(kPos.x, kPos.y, '#222', '#ffeb3b', 'GK');
+
+    // penalty taker
+    drawPerson(spot.x, spot.y + 30, player.color, '#fff', player.number);
+
+    // ball
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ballPos.x, ballPos.y, W * 0.025, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    if (flashColor) {
+      ctx.fillStyle = flashColor;
+      ctx.globalAlpha = 0.25;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawPerson(x, y, shirtColor, shortsColor, label) {
+    // head
+    ctx.fillStyle = '#f1c27d';
+    ctx.beginPath();
+    ctx.arc(x, y - 22, 9, 0, Math.PI * 2);
+    ctx.fill();
+    // body
+    ctx.fillStyle = shirtColor;
+    ctx.fillRect(x - 12, y - 14, 24, 22);
+    // shorts
+    ctx.fillStyle = shortsColor;
+    ctx.fillRect(x - 12, y + 8, 24, 8);
+    // label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(label), x, y);
+  }
+
+  function animateShot(targetZone) {
+    animating = true;
+    setButtonsEnabled(false);
+    const keeperZone = Math.floor(Math.random() * 6);
+    const target = zoneCenter(targetZone);
+    const duration = 420;
+    const start = performance.now();
+
+    function frame(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const x = spot.x + (target.x - spot.x) * t;
+      const y = spot.y + (target.y - spot.y) * t;
+      drawScene({ x, y }, t > 0.15 ? keeperZone : null, null);
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        resolveShot(targetZone, keeperZone, target);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function resolveShot(shotZone, keeperZone, ballEnd) {
+    const saved = shotZone === keeperZone;
+    if (saved) {
+      messageEl.textContent = 'SAVED! 🧤';
+      drawScene(ballEnd, keeperZone, 'rgba(239,71,111,0.5)');
+    } else {
+      score++;
+      scoreEl.textContent = score;
+      messageEl.textContent = 'GOAL! ⚽🎉';
+      drawScene(ballEnd, keeperZone, 'rgba(6,214,160,0.5)');
+    }
+
+    setTimeout(() => {
+      if (round >= ROUNDS) {
+        showResult();
+      } else {
+        round++;
+        roundEl.textContent = round;
+        messageEl.textContent = 'Pick where to aim!';
+        drawScene(spot, null, null);
+        setButtonsEnabled(true);
+      }
+      animating = false;
+    }, 1100);
+  }
+
+  function showResult() {
+    let title, text;
+    if (score === ROUNDS) { title = 'PERFECT!'; }
+    else if (score >= ROUNDS - 1) { title = 'GREAT JOB!'; }
+    else if (score >= ROUNDS / 2) { title = 'NOT BAD!'; }
+    else { title = 'TOUGH LUCK'; }
+    resultTitle.textContent = title;
+    resultText.textContent = player.name + ' scored ' + score + '/' + ROUNDS + ' penalties!';
+    resultScreen.classList.remove('hidden');
+  }
+
+  aimButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (animating) return;
+      animateShot(parseInt(btn.dataset.zone, 10));
+    });
+  });
+
+  restartBtn.addEventListener('click', () => {
+    resultScreen.classList.add('hidden');
+    startMatch();
+  });
+
+  drawScene(spot, null, null);
+})();
+</script>
+</body>
+</html>

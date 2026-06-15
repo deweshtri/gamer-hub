@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Gamer Hub - Snake</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  body { display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; }
+  .game-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5em;
+  }
+  canvas {
+    background: #2b2d42;
+    border-radius: 12px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+    touch-action: none;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  #score {
+    text-align: center;
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-weight: bold;
+    margin: 0.2em 0;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13,27,42,0.55);
+    color: #fff;
+    text-align: center;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h1 { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .overlay p { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
+  .mobile-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(2, 56px);
+    gap: 6px;
+    justify-content: center;
+    margin: 0.4em auto 0.8em;
+  }
+  .mobile-controls button {
+    font-size: 1.4rem;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.6);
+    color: var(--dark);
+    cursor: pointer;
+  }
+  .mc-up { grid-column: 2; grid-row: 1; }
+  .mc-left { grid-column: 1; grid-row: 2; }
+  .mc-down { grid-column: 2; grid-row: 2; }
+  .mc-right { grid-column: 3; grid-row: 2; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back-link" href="index.html">← Hub</a>
+    <h1>SNAKE</h1>
+    <span class="spacer"></span>
+  </div>
+  <div id="score">Score: 0</div>
+  <div class="game-wrap">
+    <canvas id="game"></canvas>
+  </div>
+  <div class="mobile-controls">
+    <button class="mc-up" data-dir="up">▲</button>
+    <button class="mc-left" data-dir="left">◀</button>
+    <button class="mc-down" data-dir="down">▼</button>
+    <button class="mc-right" data-dir="right">▶</button>
+  </div>
+  <div class="credit">Made by Atharv Tripathi</div>
+
+  <div class="overlay" id="start-screen">
+    <h1>SNAKE</h1>
+    <p>Use arrow keys / WASD / on-screen buttons to move.</p>
+    <p>Eat the food, grow longer, don't hit the walls or yourself.</p>
+    <button class="btn" id="start-btn">Start Game</button>
+  </div>
+
+  <div class="overlay hidden" id="gameover-screen">
+    <h1>GAME OVER</h1>
+    <p id="final-score">Score: 0</p>
+    <p id="best-score">Best: 0</p>
+    <button class="btn" id="restart-btn">Play Again</button>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const startScreen = document.getElementById('start-screen');
+  const gameoverScreen = document.getElementById('gameover-screen');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const finalScoreEl = document.getElementById('final-score');
+  const bestScoreEl = document.getElementById('best-score');
+  const BEST_KEY = 'gamerhub_snake_best';
+
+  const COLS = 20, ROWS = 20;
+  let cellSize;
+
+  function resize() {
+    const wrap = canvas.parentElement;
+    const maxSize = Math.min(wrap.clientWidth, wrap.clientHeight) - 10;
+    cellSize = Math.floor(maxSize / COLS);
+    canvas.width = cellSize * COLS;
+    canvas.height = cellSize * ROWS;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let snake, dir, nextDir, food, score, running, stepAcc, stepInterval, lastTime;
+
+  function randomCell() {
+    return { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+  }
+
+  function placeFood() {
+    let f;
+    do {
+      f = randomCell();
+    } while (snake.some(s => s.x === f.x && s.y === f.y));
+    food = f;
+  }
+
+  function init() {
+    snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
+    dir = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    placeFood();
+    score = 0;
+    stepInterval = 0.13;
+    stepAcc = 0;
+    running = true;
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function setDir(nx, ny) {
+    // prevent reversing directly into self
+    if (snake.length > 1 && nx === -dir.x && ny === -dir.y) return;
+    nextDir = { x: nx, y: ny };
+  }
+
+  window.addEventListener('keydown', (e) => {
+    switch (e.key) {
+      case 'ArrowUp': case 'w': case 'W': setDir(0, -1); e.preventDefault(); break;
+      case 'ArrowDown': case 's': case 'S': setDir(0, 1); e.preventDefault(); break;
+      case 'ArrowLeft': case 'a': case 'A': setDir(-1, 0); e.preventDefault(); break;
+      case 'ArrowRight': case 'd': case 'D': setDir(1, 0); e.preventDefault(); break;
+    }
+  });
+
+  document.querySelectorAll('.mobile-controls button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switch (btn.dataset.dir) {
+        case 'up': setDir(0, -1); break;
+        case 'down': setDir(0, 1); break;
+        case 'left': setDir(-1, 0); break;
+        case 'right': setDir(1, 0); break;
+      }
+    });
+  });
+
+  function step() {
+    dir = nextDir;
+    const head = snake[0];
+    const newHead = { x: head.x + dir.x, y: head.y + dir.y };
+
+    if (newHead.x < 0 || newHead.x >= COLS || newHead.y < 0 || newHead.y >= ROWS ||
+        snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
+      gameOver();
+      return;
+    }
+
+    snake.unshift(newHead);
+    if (newHead.x === food.x && newHead.y === food.y) {
+      score += 10;
+      placeFood();
+      stepInterval = Math.max(0.06, stepInterval - 0.002);
+    } else {
+      snake.pop();
+    }
+    scoreEl.textContent = 'Score: ' + score;
+  }
+
+  function draw() {
+    ctx.fillStyle = '#2b2d42';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // food
+    ctx.fillStyle = '#ef476f';
+    ctx.beginPath();
+    ctx.arc((food.x + 0.5) * cellSize, (food.y + 0.5) * cellSize, cellSize * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // snake
+    snake.forEach((s, i) => {
+      ctx.fillStyle = i === 0 ? '#ffd166' : '#06d6a0';
+      const pad = cellSize * 0.08;
+      ctx.fillRect(s.x * cellSize + pad, s.y * cellSize + pad, cellSize - pad * 2, cellSize - pad * 2);
+    });
+  }
+
+  function loop(now) {
+    if (!running) return;
+    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    lastTime = now;
+    stepAcc += dt;
+    while (stepAcc >= stepInterval) {
+      stepAcc -= stepInterval;
+      step();
+      if (!running) return;
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function gameOver() {
+    running = false;
+    const best = Math.max(score, parseInt(localStorage.getItem(BEST_KEY) || '0', 10));
+    localStorage.setItem(BEST_KEY, best);
+    finalScoreEl.textContent = 'Score: ' + score;
+    bestScoreEl.textContent = 'Best: ' + best;
+    gameoverScreen.classList.remove('hidden');
+  }
+
+  function startGame() {
+    startScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
+    resize();
+    init();
+  }
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+})();
+</script>
+</body>
+</html>

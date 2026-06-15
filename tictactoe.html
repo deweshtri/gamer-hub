@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Gamer Hub - Tic-Tac-Toe</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; }
+  .status { font-size: clamp(1.1rem, 4vw, 1.6rem); font-weight: bold; margin: 0.4em 0; text-align: center; }
+  .scoreboard { display: flex; gap: 1.5em; font-size: clamp(0.9rem, 3vw, 1.1rem); margin-bottom: 0.6em; }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 8px;
+    width: min(90vw, 360px);
+    height: min(90vw, 360px);
+    margin: 0.4em 0;
+  }
+  .cell {
+    background: rgba(255,255,255,0.6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: min(14vw, 5rem);
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--dark);
+    user-select: none;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  }
+  .cell.x { color: #ef476f; }
+  .cell.o { color: #118ab2; }
+  .cell.disabled { cursor: default; }
+  .modes { display: flex; gap: 0.6em; margin-bottom: 0.4em; }
+  .modes button {
+    padding: 0.4em 1em;
+    border-radius: 999px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: rgba(255,255,255,0.55);
+    color: var(--dark);
+  }
+  .modes button.active { background: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back-link" href="index.html">← Hub</a>
+    <h1>TIC-TAC-TOE</h1>
+    <span class="spacer"></span>
+  </div>
+
+  <div class="modes">
+    <button id="mode-easy">Easy</button>
+    <button id="mode-hard" class="active">Hard</button>
+  </div>
+
+  <div class="scoreboard">
+    <span>You (X): <span id="x-score">0</span></span>
+    <span>Computer (O): <span id="o-score">0</span></span>
+    <span>Draws: <span id="d-score">0</span></span>
+  </div>
+
+  <div class="status" id="status">Your turn</div>
+  <div class="board" id="board"></div>
+  <button class="btn" id="reset-btn">New Round</button>
+
+  <div class="credit">Made by Atharv Tripathi</div>
+
+<script>
+(() => {
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const resetBtn = document.getElementById('reset-btn');
+  const xScoreEl = document.getElementById('x-score');
+  const oScoreEl = document.getElementById('o-score');
+  const dScoreEl = document.getElementById('d-score');
+  const modeEasyBtn = document.getElementById('mode-easy');
+  const modeHardBtn = document.getElementById('mode-hard');
+
+  const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  let board, gameOver, hardMode = true;
+  let scores = { x: 0, o: 0, d: 0 };
+
+  modeEasyBtn.addEventListener('click', () => { hardMode = false; modeEasyBtn.classList.add('active'); modeHardBtn.classList.remove('active'); reset(); });
+  modeHardBtn.addEventListener('click', () => { hardMode = true; modeHardBtn.classList.add('active'); modeEasyBtn.classList.remove('active'); reset(); });
+
+  function reset() {
+    board = Array(9).fill(null);
+    gameOver = false;
+    statusEl.textContent = 'Your turn';
+    render();
+  }
+
+  function render() {
+    boardEl.innerHTML = '';
+    board.forEach((v, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (v ? ' ' + v.toLowerCase() : '') + (gameOver || v ? ' disabled' : '');
+      cell.textContent = v || '';
+      cell.addEventListener('click', () => onCellClick(i));
+      boardEl.appendChild(cell);
+    });
+  }
+
+  function winner(b) {
+    for (const line of WIN_LINES) {
+      const [a, c, d] = line;
+      if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a];
+    }
+    if (b.every(c => c)) return 'draw';
+    return null;
+  }
+
+  function onCellClick(i) {
+    if (gameOver || board[i]) return;
+    board[i] = 'X';
+    render();
+    const w = winner(board);
+    if (w) { finish(w); return; }
+    statusEl.textContent = "Computer's turn...";
+    setTimeout(computerMove, 350);
+  }
+
+  function computerMove() {
+    if (gameOver) return;
+    let move;
+    if (hardMode) {
+      move = bestMove(board);
+    } else {
+      // easy: 60% random, 40% best
+      if (Math.random() < 0.6) {
+        const empties = board.map((v, i) => v ? null : i).filter(i => i !== null);
+        move = empties[Math.floor(Math.random() * empties.length)];
+      } else {
+        move = bestMove(board);
+      }
+    }
+    board[move] = 'O';
+    render();
+    const w = winner(board);
+    if (w) { finish(w); return; }
+    statusEl.textContent = 'Your turn';
+  }
+
+  function bestMove(b) {
+    let best = -Infinity, move = null;
+    for (let i = 0; i < 9; i++) {
+      if (!b[i]) {
+        b[i] = 'O';
+        const score = minimax(b, false);
+        b[i] = null;
+        if (score > best) { best = score; move = i; }
+      }
+    }
+    return move;
+  }
+
+  function minimax(b, isMax) {
+    const w = winner(b);
+    if (w === 'O') return 1;
+    if (w === 'X') return -1;
+    if (w === 'draw') return 0;
+
+    if (isMax) {
+      let best = -Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (!b[i]) {
+          b[i] = 'O';
+          best = Math.max(best, minimax(b, false));
+          b[i] = null;
+        }
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (!b[i]) {
+          b[i] = 'X';
+          best = Math.min(best, minimax(b, true));
+          b[i] = null;
+        }
+      }
+      return best;
+    }
+  }
+
+  function finish(w) {
+    gameOver = true;
+    render();
+    if (w === 'X') { scores.x++; statusEl.textContent = 'You win! 🎉'; }
+    else if (w === 'O') { scores.o++; statusEl.textContent = 'Computer wins!'; }
+    else { scores.d++; statusEl.textContent = "It's a draw!"; }
+    xScoreEl.textContent = scores.x;
+    oScoreEl.textContent = scores.o;
+    dScoreEl.textContent = scores.d;
+  }
+
+  resetBtn.addEventListener('click', reset);
+  reset();
+})();
+</script>
+</body>
+</html>
