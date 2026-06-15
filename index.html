@@ -184,9 +184,7 @@
 
   function jump() {
     if (!running) return;
-    const impulse = JUMP_VELOCITY * height;
-    const maxRise = impulse * 1.5;
-    player.vy = Math.max(player.vy + impulse, maxRise);
+    player.vy += JUMP_VELOCITY * height;
   }
 
   function spawnObstacle() {
