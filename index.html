@@ -163,7 +163,6 @@
       y: groundY,
       vy: 0,
       size: Math.min(width, height) * 0.06,
-      onGround: true,
     };
     obstacles = [];
     clouds = [];
@@ -185,10 +184,9 @@
 
   function jump() {
     if (!running) return;
-    if (player.onGround) {
-      player.vy = JUMP_VELOCITY * height;
-      player.onGround = false;
-    }
+    const impulse = JUMP_VELOCITY * height;
+    const maxRise = impulse * 1.5;
+    player.vy = Math.max(player.vy + impulse, maxRise);
   }
 
   function spawnObstacle() {
@@ -208,7 +206,9 @@
     if (player.y >= groundY) {
       player.y = groundY;
       player.vy = 0;
-      player.onGround = true;
+    } else if (player.y < 0) {
+      player.y = 0;
+      player.vy = 0;
     }
 
     // clouds
