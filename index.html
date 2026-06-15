@@ -191,7 +191,7 @@
     const size = height * (0.04 + Math.random() * 0.05);
     obstacles.push({
       x: width + size,
-      y: groundY - size,
+      y: groundY + player.size - size,
       size,
       color: ['#ef476f', '#06d6a0', '#118ab2', '#ffd166'][Math.floor(Math.random() * 4)],
     });
