@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Gamer Hub - Sky Jumper</title>
+<meta name="description" content="Gamer Hub - a free browser jumping game made by Atharv Tripathi. Play instantly, no download needed." />
+<style>
+  :root {
+    --accent: #ffd166;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Trebuchet MS', 'Segoe UI', Arial, sans-serif;
+    background: #0d1b2a;
+  }
+  #game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    display: block;
+    background: linear-gradient(to bottom, #5dc1f0 0%, #aee9ff 60%, #f4f9c9 100%);
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+  .overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+    background: rgba(13, 27, 42, 0.55);
+    transition: opacity 0.2s ease;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h1 {
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    margin: 0;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-shadow: 0 4px 0 rgba(0,0,0,0.25);
+  }
+  .overlay h2 {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    margin: 0.2em 0 0.6em;
+  }
+  .overlay p {
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+    margin: 0.4em 0;
+  }
+  .credit {
+    position: absolute;
+    bottom: 0.6em;
+    width: 100%;
+    text-align: center;
+    font-size: clamp(0.85rem, 2.2vw, 1.1rem);
+    color: #ffe9a8;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+  .btn {
+    margin-top: 1.2em;
+    padding: 0.7em 2em;
+    font-size: clamp(1rem, 3vw, 1.4rem);
+    font-weight: bold;
+    color: #0d1b2a;
+    background: var(--accent);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.25);
+    transition: transform 0.06s ease;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
+  #hud {
+    position: absolute;
+    top: 0.6em;
+    left: 0.8em;
+    color: #0d1b2a;
+    font-size: clamp(1rem, 3vw, 1.6rem);
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(255,255,255,0.5);
+    user-select: none;
+  }
+  #hint {
+    position: absolute;
+    top: 0.6em;
+    right: 0.8em;
+    color: #0d1b2a;
+    font-size: clamp(0.75rem, 2.2vw, 1rem);
+    opacity: 0.7;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="game"></canvas>
+  <div id="hud">Score: 0</div>
+  <div id="hint">Tap / Click / Space / ↑ to jump</div>
+
+  <div class="overlay" id="start-screen">
+    <h1>GAMER HUB</h1>
+    <h2>Sky Jumper</h2>
+    <p>Jump over obstacles. Don't get hit!</p>
+    <button class="btn" id="start-btn">Start Game</button>
+  </div>
+
+  <div class="overlay hidden" id="gameover-screen">
+    <h1>GAME OVER</h1>
+    <p id="final-score">Score: 0</p>
+    <p id="best-score">Best: 0</p>
+    <button class="btn" id="restart-btn">Play Again</button>
+  </div>
+
+  <div class="credit">Made by Atharv Tripathi</div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const hud = document.getElementById('hud');
+  const startScreen = document.getElementById('start-screen');
+  const gameoverScreen = document.getElementById('gameover-screen');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const finalScoreEl = document.getElementById('final-score');
+  const bestScoreEl = document.getElementById('best-score');
+
+  let width, height, groundY;
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    groundY = height * 0.8;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const GRAVITY = 2.6;
+  const JUMP_VELOCITY = -0.95;
+
+  let player, obstacles, clouds, score, speed, running, lastTime, spawnTimer;
+  const BEST_KEY = 'gamerhub_best_score';
+
+  function init() {
+    player = {
+      x: width * 0.15,
+      y: groundY,
+      vy: 0,
+      size: Math.min(width, height) * 0.06,
+      onGround: true,
+    };
+    obstacles = [];
+    clouds = [];
+    for (let i = 0; i < 5; i++) {
+      clouds.push({
+        x: Math.random() * width,
+        y: Math.random() * height * 0.4,
+        size: 30 + Math.random() * 50,
+        speed: 0.01 + Math.random() * 0.02,
+      });
+    }
+    score = 0;
+    speed = height * 0.35;
+    running = true;
+    spawnTimer = 0;
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function jump() {
+    if (!running) return;
+    if (player.onGround) {
+      player.vy = JUMP_VELOCITY * height;
+      player.onGround = false;
+    }
+  }
+
+  function spawnObstacle() {
+    const size = height * (0.04 + Math.random() * 0.05);
+    obstacles.push({
+      x: width + size,
+      y: groundY - size,
+      size,
+      color: ['#ef476f', '#06d6a0', '#118ab2', '#ffd166'][Math.floor(Math.random() * 4)],
+    });
+  }
+
+  function update(dt) {
+    // player physics
+    player.vy += GRAVITY * height * dt;
+    player.y += player.vy * dt;
+    if (player.y >= groundY) {
+      player.y = groundY;
+      player.vy = 0;
+      player.onGround = true;
+    }
+
+    // clouds
+    clouds.forEach(c => {
+      c.x -= c.speed * speed * dt;
+      if (c.x < -c.size) {
+        c.x = width + c.size;
+        c.y = Math.random() * height * 0.4;
+      }
+    });
+
+    // obstacles
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      spawnObstacle();
+      spawnTimer = 0.9 + Math.random() * 1.0 - Math.min(score / 4000, 0.5);
+      spawnTimer = Math.max(spawnTimer, 0.45);
+    }
+    obstacles.forEach(o => o.x -= speed * dt);
+    obstacles = obstacles.filter(o => o.x > -o.size);
+
+    // score & speed
+    score += dt * 60;
+    speed += dt * 2;
+
+    // collision
+    const px = player.x, py = player.y, ps = player.size;
+    for (const o of obstacles) {
+      const ox = o.x, oy = o.y, os = o.size;
+      if (px < ox + os && px + ps > ox && py < oy + os && py + ps > oy) {
+        gameOver();
+        break;
+      }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    // sun
+    ctx.fillStyle = '#fff6c8';
+    ctx.beginPath();
+    ctx.arc(width * 0.85, height * 0.18, Math.min(width, height) * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+
+    // clouds
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    clouds.forEach(c => {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.size * 0.5, 0, Math.PI * 2);
+      ctx.arc(c.x + c.size * 0.4, c.y + c.size * 0.1, c.size * 0.35, 0, Math.PI * 2);
+      ctx.arc(c.x - c.size * 0.4, c.y + c.size * 0.1, c.size * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // ground
+    ctx.fillStyle = '#7cb518';
+    ctx.fillRect(0, groundY + player.size, width, height - groundY - player.size);
+    ctx.fillStyle = '#5a8a12';
+    ctx.fillRect(0, groundY + player.size, width, height * 0.02);
+
+    // player
+    ctx.fillStyle = '#ff6b6b';
+    roundRect(ctx, player.x, player.y, player.size, player.size, player.size * 0.2);
+    ctx.fill();
+    // eye
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(player.x + player.size * 0.7, player.y + player.size * 0.3, player.size * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0d1b2a';
+    ctx.beginPath();
+    ctx.arc(player.x + player.size * 0.74, player.y + player.size * 0.3, player.size * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+
+    // obstacles
+    obstacles.forEach(o => {
+      ctx.fillStyle = o.color;
+      roundRect(ctx, o.x, o.y, o.size, o.size, o.size * 0.15);
+      ctx.fill();
+    });
+
+    hud.textContent = 'Score: ' + Math.floor(score);
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function loop(now) {
+    if (!running) return;
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function gameOver() {
+    running = false;
+    const finalScore = Math.floor(score);
+    const best = Math.max(finalScore, parseInt(localStorage.getItem(BEST_KEY) || '0', 10));
+    localStorage.setItem(BEST_KEY, best);
+    finalScoreEl.textContent = 'Score: ' + finalScore;
+    bestScoreEl.textContent = 'Best: ' + best;
+    gameoverScreen.classList.remove('hidden');
+  }
+
+  function startGame() {
+    startScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
+    init();
+  }
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      if (!running && !startScreen.classList.contains('hidden')) {
+        startGame();
+      } else if (!running && !gameoverScreen.classList.contains('hidden')) {
+        startGame();
+      } else {
+        jump();
+      }
+    }
+  });
+
+  canvas.addEventListener('pointerdown', () => {
+    if (!running) return;
+    jump();
+  });
+})();
+</script>
+</body>
+</html>
