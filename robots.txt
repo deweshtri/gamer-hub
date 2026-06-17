@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://deweshtri.github.io/gamer-hub/sitemap.xml
