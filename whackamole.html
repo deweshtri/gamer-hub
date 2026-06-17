@@ -7,54 +7,29 @@
 <link rel="stylesheet" href="style.css" />
 <style>
   body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; overflow: hidden; }
-  .stats { display: flex; gap: 2em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.4em 0 0.8em; }
+  .stats { display: flex; gap: 2em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.4em 0; flex-wrap: wrap; justify-content: center; }
+  .field-wrap { display: flex; gap: 1.2em; justify-content: center; flex-wrap: nowrap; }
+  .field-box { display: flex; flex-direction: column; align-items: center; }
+  .field-label { font-weight: bold; font-size: 1rem; margin-bottom: 6px; }
   .field {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    width: min(90vw, 380px);
-    margin: 0 auto;
+    gap: 10px;
+    width: min(44vw, 220px);
   }
-  .hole {
-    position: relative;
-    aspect-ratio: 1;
-    background: #5a3a22;
-    border-radius: 50%;
-    box-shadow: inset 0 8px 14px rgba(0,0,0,0.5);
-    overflow: hidden;
-    cursor: pointer;
-  }
-  .mole {
-    position: absolute;
-    left: 10%;
-    bottom: -100%;
-    width: 80%;
-    height: 80%;
-    border-radius: 50% 50% 45% 45%;
-    background: #8d6e63;
-    transition: bottom 0.12s ease-out;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.2rem;
-  }
+  .field.solo { width: min(90vw, 380px); }
+  .hole { position: relative; aspect-ratio: 1; background: #5a3a22; border-radius: 50%; box-shadow: inset 0 8px 14px rgba(0,0,0,0.5); overflow: hidden; cursor: pointer; }
+  .mole { position: absolute; left: 10%; bottom: -100%; width: 80%; height: 80%; border-radius: 50% 50% 45% 45%; background: #8d6e63; transition: bottom 0.12s ease-out; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
   .hole.up .mole { bottom: 5%; }
   .hole.whacked .mole { background: #c9c9c9; }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(13,27,42,0.55);
-    color: #fff;
-    text-align: center;
-  }
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(13,27,42,0.55); color: #fff; text-align: center; padding: 1em; }
   .overlay.hidden { display: none; }
   .overlay h1 { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
   .overlay p { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
+  .mode-pick { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 0.8em; }
+  .mode-card { background: rgba(255,255,255,0.12); border: 3px solid transparent; border-radius: 16px; padding: 1em 1.4em; cursor: pointer; color: #fff; min-width: 130px; text-align: center; }
+  .mode-card:hover { border-color: var(--accent); }
+  .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
 </style>
 </head>
 <body>
@@ -63,25 +38,44 @@
     <h1>WHACK-A-MOLE</h1>
     <span class="spacer"></span>
   </div>
-
   <div class="stats">
-    <span>Score: <span id="score">0</span></span>
-    <span>Time: <span id="time">30</span>s</span>
+    <span id="stat-left">Score: <span id="score1">0</span></span>
+    <span>⏱ <span id="time">30</span>s</span>
+    <span id="stat-right" style="display:none">P2: <span id="score2">0</span></span>
   </div>
-
-  <div class="field" id="field"></div>
-
+  <div class="field-wrap" id="field-wrap">
+    <div class="field-box">
+      <div class="field-label" id="label1" style="display:none">P1 — Click</div>
+      <div class="field solo" id="field1"></div>
+    </div>
+    <div class="field-box" id="p2-box" style="display:none">
+      <div class="field-label" id="label2">P2 — Tap</div>
+      <div class="field" id="field2"></div>
+    </div>
+  </div>
   <div class="credit">Made by Atharv Tripathi</div>
 
-  <div class="overlay" id="start-screen">
+  <div class="overlay" id="mode-screen">
     <h1>WHACK-A-MOLE</h1>
-    <p>Click the moles as fast as you can before they duck back down!</p>
-    <p>You have 30 seconds.</p>
+    <p>Choose your mode</p>
+    <div class="mode-pick">
+      <div class="mode-card" id="mode-solo">
+        <div class="ico">🔨</div>1 Player<br/><small>30 seconds, click moles</small>
+      </div>
+      <div class="mode-card" id="mode-2p">
+        <div class="ico">👥</div>2 Players<br/><small>Split screen, most moles wins</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="start-screen">
+    <h1>READY?</h1>
+    <p id="start-desc">Click moles as fast as you can — 30 seconds!</p>
     <button class="btn" id="start-btn">Start Game</button>
   </div>
 
   <div class="overlay hidden" id="gameover-screen">
-    <h1>TIME'S UP</h1>
+    <h1 id="go-title">TIME'S UP!</h1>
     <p id="final-score">Score: 0</p>
     <p id="best-score">Best: 0</p>
     <button class="btn" id="restart-btn">Play Again</button>
@@ -89,98 +83,158 @@
 
 <script>
 (() => {
-  const field = document.getElementById('field');
-  const scoreEl = document.getElementById('score');
-  const timeEl = document.getElementById('time');
+  const field1El    = document.getElementById('field1');
+  const field2El    = document.getElementById('field2');
+  const p2Box       = document.getElementById('p2-box');
+  const label1      = document.getElementById('label1');
+  const statLeft    = document.getElementById('stat-left');
+  const statRight   = document.getElementById('stat-right');
+  const score1El    = document.getElementById('score1');
+  const score2El    = document.getElementById('score2');
+  const timeEl      = document.getElementById('time');
+  const modeScreen  = document.getElementById('mode-screen');
   const startScreen = document.getElementById('start-screen');
+  const startDesc   = document.getElementById('start-desc');
   const gameoverScreen = document.getElementById('gameover-screen');
-  const startBtn = document.getElementById('start-btn');
-  const restartBtn = document.getElementById('restart-btn');
+  const goTitle     = document.getElementById('go-title');
+  const startBtn    = document.getElementById('start-btn');
+  const restartBtn  = document.getElementById('restart-btn');
   const finalScoreEl = document.getElementById('final-score');
-  const bestScoreEl = document.getElementById('best-score');
+  const bestScoreEl  = document.getElementById('best-score');
   const BEST_KEY = 'gamerhub_mole_best';
   const HOLE_COUNT = 9;
 
-  let holes = [];
-  for (let i = 0; i < HOLE_COUNT; i++) {
-    const hole = document.createElement('div');
-    hole.className = 'hole';
-    const mole = document.createElement('div');
-    mole.className = 'mole';
-    mole.textContent = '🐹';
-    hole.appendChild(mole);
-    field.appendChild(hole);
-    holes.push(hole);
-    hole.addEventListener('click', () => whack(hole));
-  }
+  let mode = 'solo', holes1 = [], holes2 = [], score1 = 0, score2 = 0;
+  let running, timeLeft, pop1Timer, pop2Timer, countdownTimer;
+  let active1 = null, active2 = null;
 
-  let score, timeLeft, running, popTimer, countdownTimer, activeHole;
-
-  function whack(hole) {
-    if (!running) return;
-    if (hole.classList.contains('up') && !hole.classList.contains('whacked')) {
-      hole.classList.add('whacked');
-      score++;
-      scoreEl.textContent = score;
-      setTimeout(() => hideHole(hole), 80);
+  function makeHoles(fieldEl, holes, onWhack) {
+    holes.length = 0;
+    fieldEl.innerHTML = '';
+    for (let i = 0; i < HOLE_COUNT; i++) {
+      const hole = document.createElement('div');
+      hole.className = 'hole';
+      const mole = document.createElement('div');
+      mole.className = 'mole';
+      mole.textContent = '🐹';
+      hole.appendChild(mole);
+      fieldEl.appendChild(hole);
+      holes.push(hole);
+      hole.addEventListener('click', () => { if (running) onWhack(hole); });
     }
   }
 
-  function hideHole(hole) {
-    hole.classList.remove('up');
-    hole.classList.remove('whacked');
-    if (activeHole === hole) activeHole = null;
+  document.getElementById('mode-solo').addEventListener('click', () => {
+    mode = 'solo';
+    field1El.className = 'field solo';
+    p2Box.style.display = 'none';
+    label1.style.display = 'none';
+    statRight.style.display = 'none';
+    statLeft.innerHTML = 'Score: <span id="score1">0</span>';
+    makeHoles(field1El, holes1, h => whack(h, 1));
+    modeScreen.classList.add('hidden');
+    startDesc.textContent = 'Click moles as fast as you can — 30 seconds!';
+    startScreen.classList.remove('hidden');
+  });
+
+  document.getElementById('mode-2p').addEventListener('click', () => {
+    mode = '2p';
+    field1El.className = 'field';
+    p2Box.style.display = '';
+    label1.style.display = '';
+    statRight.style.display = '';
+    statLeft.innerHTML = 'P1: <span id="score1">0</span>';
+    makeHoles(field1El, holes1, h => whack(h, 1));
+    makeHoles(field2El, holes2, h => whack(h, 2));
+    modeScreen.classList.add('hidden');
+    startDesc.textContent = 'P1 clicks left grid, P2 taps right grid. Most moles in 30s wins!';
+    startScreen.classList.remove('hidden');
+  });
+
+  function whack(hole, player) {
+    if (!hole.classList.contains('up') || hole.classList.contains('whacked')) return;
+    hole.classList.add('whacked');
+    if (player === 1) { score1++; document.getElementById('score1').textContent = score1; }
+    else              { score2++; score2El.textContent = score2; }
+    setTimeout(() => hideHole(hole, player), 80);
   }
 
-  function popMole() {
+  function hideHole(hole, player) {
+    hole.classList.remove('up', 'whacked');
+    if (player === 1 && active1 === hole) active1 = null;
+    if (player === 2 && active2 === hole) active2 = null;
+  }
+
+  function popMole(holes, getActive, setActive, restart) {
     if (!running) return;
-    if (activeHole) hideHole(activeHole);
+    const prev = getActive();
+    if (prev) hideHole(prev, holes === holes1 ? 1 : 2);
     const hole = holes[Math.floor(Math.random() * holes.length)];
-    activeHole = hole;
+    setActive(hole);
     hole.classList.add('up');
-    const upTime = Math.max(450, 1000 - score * 15);
-    setTimeout(() => { if (activeHole === hole) hideHole(hole); }, upTime);
-    const nextDelay = Math.max(350, 800 - score * 10) + Math.random() * 400;
-    popTimer = setTimeout(popMole, nextDelay);
+    const combined = score1 + score2;
+    const upTime = Math.max(450, 1000 - combined * 10);
+    const next   = Math.max(350, 850 - combined * 8) + Math.random() * 400;
+    const t1 = setTimeout(() => { if (getActive() === hole) hideHole(hole, holes === holes1 ? 1 : 2); }, upTime);
+    const t2 = setTimeout(() => restart(), next);
+    return [t1, t2];
+  }
+
+  let pop1Timers = [], pop2Timers = [];
+
+  function startPops() {
+    const run1 = () => { pop1Timers = popMole(holes1, () => active1, h => active1 = h, run1) || []; };
+    run1();
+    if (mode === '2p') {
+      const run2 = () => { pop2Timers = popMole(holes2, () => active2, h => active2 = h, run2) || []; };
+      setTimeout(run2, 200);
+    }
   }
 
   function tick() {
     timeLeft--;
     timeEl.textContent = timeLeft;
-    if (timeLeft <= 0) {
-      endGame();
-    } else {
-      countdownTimer = setTimeout(tick, 1000);
-    }
+    if (timeLeft <= 0) endGame();
+    else countdownTimer = setTimeout(tick, 1000);
   }
 
   function endGame() {
     running = false;
-    clearTimeout(popTimer);
     clearTimeout(countdownTimer);
-    holes.forEach(hideHole);
-    const best = Math.max(score, parseInt(localStorage.getItem(BEST_KEY) || '0', 10));
-    localStorage.setItem(BEST_KEY, best);
-    finalScoreEl.textContent = 'Score: ' + score;
-    bestScoreEl.textContent = 'Best: ' + best;
+    pop1Timers.forEach(clearTimeout);
+    pop2Timers.forEach(clearTimeout);
+    [...holes1, ...holes2].forEach(h => h.classList.remove('up', 'whacked'));
+    if (mode === '2p') {
+      if (score1 > score2)      goTitle.textContent = 'P1 WINS! 🎉';
+      else if (score2 > score1) goTitle.textContent = 'P2 WINS! 🎉';
+      else                      goTitle.textContent = "IT'S A DRAW!";
+      finalScoreEl.textContent = 'P1: ' + score1 + '  |  P2: ' + score2;
+      bestScoreEl.textContent = '';
+    } else {
+      goTitle.textContent = "TIME'S UP!";
+      const best = Math.max(score1, parseInt(localStorage.getItem(BEST_KEY) || '0', 10));
+      localStorage.setItem(BEST_KEY, best);
+      finalScoreEl.textContent = 'Score: ' + score1;
+      bestScoreEl.textContent = 'Best: ' + best;
+    }
     gameoverScreen.classList.remove('hidden');
   }
 
-  function startGame() {
+  startBtn.addEventListener('click', () => {
     startScreen.classList.add('hidden');
-    gameoverScreen.classList.add('hidden');
-    score = 0;
-    timeLeft = 30;
-    activeHole = null;
-    scoreEl.textContent = score;
-    timeEl.textContent = timeLeft;
+    score1 = 0; score2 = 0; timeLeft = 30; active1 = null; active2 = null;
+    document.getElementById('score1').textContent = 0;
+    if (mode === '2p') score2El.textContent = 0;
+    timeEl.textContent = 30;
     running = true;
-    popMole();
+    startPops();
     countdownTimer = setTimeout(tick, 1000);
-  }
+  });
 
-  startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', () => {
+    gameoverScreen.classList.add('hidden');
+    modeScreen.classList.remove('hidden');
+  });
 })();
 </script>
 </body>

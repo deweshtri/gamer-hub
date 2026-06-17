@@ -7,48 +7,26 @@
 <link rel="stylesheet" href="style.css" />
 <style>
   body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; }
-  .stats { display: flex; gap: 2em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.4em 0 0.8em; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    width: min(92vw, 420px);
-    margin: 0 auto;
-  }
-  .card {
-    aspect-ratio: 1;
-    border-radius: 10px;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: min(9vw, 2.6rem);
-    cursor: pointer;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
-    user-select: none;
-  }
-  .card.flipped, .card.matched {
-    background: rgba(255,255,255,0.7);
-  }
-  .card.matched { opacity: 0.55; cursor: default; }
-  .card .face { display: none; }
-  .card.flipped .face, .card.matched .face { display: block; }
+  .stats { display: flex; gap: 1.8em; font-size: clamp(1rem, 4vw, 1.4rem); font-weight: bold; margin: 0.4em 0; flex-wrap: wrap; justify-content: center; }
+  .turn-banner { font-size: clamp(1rem, 3.5vw, 1.3rem); font-weight: bold; text-align: center; margin-bottom: 0.3em; min-height: 1.4em; }
+  .p1-turn { color: #ef476f; }
+  .p2-turn { color: #118ab2; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: min(92vw, 420px); margin: 0 auto; }
+  .card { aspect-ratio: 1; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: min(9vw, 2.6rem); cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.15); user-select: none; }
+  .card.flipped, .card.matched { background: rgba(255,255,255,0.7); }
+  .card.matched { opacity: 0.5; cursor: default; }
+  .card.p1-match { outline: 3px solid #ef476f; }
+  .card.p2-match { outline: 3px solid #118ab2; }
   .card:not(.flipped):not(.matched) .face { display: none; }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(13,27,42,0.55);
-    color: #fff;
-    text-align: center;
-  }
+  .card .face { display: block; }
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(13,27,42,0.55); color: #fff; text-align: center; padding: 1em; }
   .overlay.hidden { display: none; }
   .overlay h1 { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
   .overlay p { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
+  .mode-pick { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 0.8em; }
+  .mode-card { background: rgba(255,255,255,0.12); border: 3px solid transparent; border-radius: 16px; padding: 1em 1.4em; cursor: pointer; color: #fff; min-width: 130px; text-align: center; }
+  .mode-card:hover { border-color: var(--accent); }
+  .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
 </style>
 </head>
 <body>
@@ -57,63 +35,85 @@
     <h1>MEMORY MATCH</h1>
     <span class="spacer"></span>
   </div>
-
   <div class="stats">
-    <span>Moves: <span id="moves">0</span></span>
-    <span>Pairs: <span id="pairs">0</span>/8</span>
+    <span id="stat-moves">Moves: 0</span>
+    <span id="stat-pairs">Pairs: 0/8</span>
+    <span id="stat-p2" style="display:none">P2 pairs: 0</span>
   </div>
-
+  <div class="turn-banner" id="turn-banner"></div>
   <div class="grid" id="grid"></div>
-
   <div class="credit">Made by Atharv Tripathi</div>
 
+  <div class="overlay" id="mode-screen">
+    <h1>MEMORY MATCH</h1>
+    <p>Choose your mode</p>
+    <div class="mode-pick">
+      <div class="mode-card" id="mode-solo">
+        <div class="ico">🧠</div>1 Player<br/><small>Find all pairs, fewest moves</small>
+      </div>
+      <div class="mode-card" id="mode-2p">
+        <div class="ico">👥</div>2 Players<br/><small>Take turns, most pairs wins</small>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay hidden" id="win-screen">
-    <h1>YOU WIN!</h1>
+    <h1 id="win-title">YOU WIN!</h1>
     <p id="final-moves">Moves: 0</p>
-    <p id="best-moves">Best: -</p>
+    <p id="best-moves"></p>
     <button class="btn" id="restart-btn">Play Again</button>
   </div>
 
 <script>
 (() => {
-  const gridEl = document.getElementById('grid');
-  const movesEl = document.getElementById('moves');
-  const pairsEl = document.getElementById('pairs');
-  const winScreen = document.getElementById('win-screen');
+  const gridEl      = document.getElementById('grid');
+  const statMoves   = document.getElementById('stat-moves');
+  const statPairs   = document.getElementById('stat-pairs');
+  const statP2      = document.getElementById('stat-p2');
+  const turnBanner  = document.getElementById('turn-banner');
+  const modeScreen  = document.getElementById('mode-screen');
+  const winScreen   = document.getElementById('win-screen');
+  const winTitle    = document.getElementById('win-title');
   const finalMovesEl = document.getElementById('final-moves');
-  const bestMovesEl = document.getElementById('best-moves');
-  const restartBtn = document.getElementById('restart-btn');
+  const bestMovesEl  = document.getElementById('best-moves');
+  const restartBtn  = document.getElementById('restart-btn');
   const BEST_KEY = 'gamerhub_memory_best';
 
   const EMOJIS = ['🐶','🐱','🐵','🦊','🐸','🐧','🦁','🐻'];
+  let mode = 'solo', cards, flipped, moves, p1Pairs, p2Pairs, totalMatched, lock, currentPlayer;
 
-  let cards, flipped, moves, matched, lock;
+  document.getElementById('mode-solo').addEventListener('click', () => { mode = 'solo'; modeScreen.classList.add('hidden'); statP2.style.display = 'none'; init(); });
+  document.getElementById('mode-2p').addEventListener('click', () => { mode = '2p'; modeScreen.classList.add('hidden'); statP2.style.display = ''; init(); });
+  restartBtn.addEventListener('click', () => { winScreen.classList.add('hidden'); modeScreen.classList.remove('hidden'); });
 
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
   function init() {
     const deck = shuffle([...EMOJIS, ...EMOJIS]);
-    cards = deck.map((emoji, i) => ({ id: i, emoji, flipped: false, matched: false }));
-    flipped = [];
-    moves = 0;
-    matched = 0;
-    lock = false;
-    movesEl.textContent = moves;
-    pairsEl.textContent = matched;
+    cards = deck.map((emoji, i) => ({ id: i, emoji, flipped: false, matched: false, matchedBy: null }));
+    flipped = []; moves = 0; p1Pairs = 0; p2Pairs = 0; totalMatched = 0; lock = false; currentPlayer = 1;
+    updateHud();
     render();
+  }
+
+  function updateHud() {
+    statMoves.textContent = (mode === '2p' ? 'Turns: ' : 'Moves: ') + moves;
+    statPairs.textContent = 'P1 pairs: ' + p1Pairs + '/' + EMOJIS.length;
+    if (mode === '2p') {
+      statP2.textContent = 'P2 pairs: ' + p2Pairs;
+      turnBanner.textContent = currentPlayer === 1 ? "🔴 P1's turn" : "🔵 P2's turn";
+      turnBanner.className = 'turn-banner ' + (currentPlayer === 1 ? 'p1-turn' : 'p2-turn');
+    } else {
+      statPairs.textContent = 'Pairs: ' + p1Pairs + '/' + EMOJIS.length;
+      turnBanner.textContent = '';
+    }
   }
 
   function render() {
     gridEl.innerHTML = '';
     cards.forEach(card => {
       const el = document.createElement('div');
-      el.className = 'card' + (card.flipped ? ' flipped' : '') + (card.matched ? ' matched' : '');
+      el.className = 'card' + (card.flipped ? ' flipped' : '') + (card.matched ? ' matched' : '') + (card.matchedBy === 1 ? ' p1-match' : card.matchedBy === 2 ? ' p2-match' : '');
       const face = document.createElement('span');
       face.className = 'face';
       face.textContent = card.emoji;
@@ -131,44 +131,49 @@
 
     if (flipped.length === 2) {
       moves++;
-      movesEl.textContent = moves;
       const [a, b] = flipped;
       if (a.emoji === b.emoji) {
         a.matched = b.matched = true;
-        matched++;
-        pairsEl.textContent = matched;
+        a.matchedBy = b.matchedBy = currentPlayer;
+        totalMatched++;
+        if (currentPlayer === 1) p1Pairs++; else p2Pairs++;
         flipped = [];
+        updateHud();
         render();
-        if (matched === EMOJIS.length) {
-          setTimeout(showWin, 300);
-        }
+        if (totalMatched === EMOJIS.length) { setTimeout(showWin, 300); return; }
+        // same player goes again in 2P (reward for finding a match)
+        updateHud();
       } else {
         lock = true;
         setTimeout(() => {
           a.flipped = b.flipped = false;
           flipped = [];
           lock = false;
+          if (mode === '2p') { currentPlayer = currentPlayer === 1 ? 2 : 1; }
+          updateHud();
           render();
-        }, 700);
+        }, 750);
       }
     }
   }
 
   function showWin() {
-    const best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
-    const newBest = best === 0 ? moves : Math.min(best, moves);
-    localStorage.setItem(BEST_KEY, newBest);
-    finalMovesEl.textContent = 'Moves: ' + moves;
-    bestMovesEl.textContent = 'Best: ' + newBest;
+    if (mode === '2p') {
+      if (p1Pairs > p2Pairs)      winTitle.textContent = 'P1 WINS! 🎉';
+      else if (p2Pairs > p1Pairs) winTitle.textContent = 'P2 WINS! 🎉';
+      else                         winTitle.textContent = "IT'S A DRAW!";
+      finalMovesEl.textContent = 'P1: ' + p1Pairs + ' pairs  |  P2: ' + p2Pairs + ' pairs';
+      bestMovesEl.textContent = '';
+    } else {
+      winTitle.textContent = 'YOU WIN! 🧠';
+      const best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+      const newBest = best === 0 ? moves : Math.min(best, moves);
+      localStorage.setItem(BEST_KEY, newBest);
+      finalMovesEl.textContent = 'Moves: ' + moves;
+      bestMovesEl.textContent = 'Best: ' + newBest;
+    }
     winScreen.classList.remove('hidden');
   }
-
-  restartBtn.addEventListener('click', () => {
-    winScreen.classList.add('hidden');
-    init();
-  });
-
-  init();
 })();
 </script>
 </body>

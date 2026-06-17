@@ -4,122 +4,29 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
 <title>Gamer Hub - Sky Jumper</title>
-<meta name="description" content="Gamer Hub - a free browser jumping game made by Atharv Tripathi. Play instantly, no download needed." />
+<meta name="description" content="Gamer Hub - a free browser jumping game made by Atharv Tripathi." />
 <style>
-  :root {
-    --accent: #ffd166;
-  }
+  :root { --accent: #ffd166; --dark: #0d1b2a; }
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;
-    font-family: 'Trebuchet MS', 'Segoe UI', Arial, sans-serif;
-    background: #0d1b2a;
-  }
-  #game-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  canvas {
-    display: block;
-    background: linear-gradient(to bottom, #5dc1f0 0%, #aee9ff 60%, #f4f9c9 100%);
-    width: 100%;
-    height: 100%;
-    touch-action: none;
-  }
-  .overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    text-align: center;
-    background: rgba(13, 27, 42, 0.55);
-    transition: opacity 0.2s ease;
-  }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Trebuchet MS', 'Segoe UI', Arial, sans-serif; background: #0d1b2a; }
+  #game-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  canvas { display: block; background: linear-gradient(to bottom, #5dc1f0 0%, #aee9ff 60%, #f4f9c9 100%); width: 100%; height: 100%; touch-action: none; }
+  .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; background: rgba(13,27,42,0.55); }
   .overlay.hidden { display: none; }
-  .overlay h1 {
-    font-size: clamp(2.5rem, 8vw, 5rem);
-    margin: 0;
-    letter-spacing: 4px;
-    color: var(--accent);
-    text-shadow: 0 4px 0 rgba(0,0,0,0.25);
-  }
-  .overlay h2 {
-    font-size: clamp(1.2rem, 4vw, 2rem);
-    margin: 0.2em 0 0.6em;
-  }
-  .overlay p {
-    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
-    margin: 0.4em 0;
-  }
-  .credit {
-    position: absolute;
-    bottom: 0.6em;
-    width: 100%;
-    text-align: center;
-    font-size: clamp(0.85rem, 2.2vw, 1.1rem);
-    color: #ffe9a8;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
-    letter-spacing: 1px;
-    pointer-events: none;
-  }
-  .btn {
-    margin-top: 1.2em;
-    padding: 0.7em 2em;
-    font-size: clamp(1rem, 3vw, 1.4rem);
-    font-weight: bold;
-    color: #0d1b2a;
-    background: var(--accent);
-    border: none;
-    border-radius: 999px;
-    cursor: pointer;
-    box-shadow: 0 6px 0 rgba(0,0,0,0.25);
-    transition: transform 0.06s ease;
-  }
+  .overlay h1 { font-size: clamp(2.5rem, 8vw, 5rem); margin: 0; letter-spacing: 4px; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .overlay h2 { font-size: clamp(1.2rem, 4vw, 2rem); margin: 0.2em 0 0.6em; }
+  .overlay p  { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
+  .btn { margin-top: 1.2em; padding: 0.7em 2em; font-size: clamp(1rem, 3vw, 1.4rem); font-weight: bold; color: var(--dark); background: var(--accent); border: none; border-radius: 999px; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.25); }
   .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
-  #hud {
-    position: absolute;
-    top: 0.6em;
-    left: 0.8em;
-    color: #0d1b2a;
-    font-size: clamp(1rem, 3vw, 1.6rem);
-    font-weight: bold;
-    text-shadow: 0 2px 4px rgba(255,255,255,0.5);
-    user-select: none;
-  }
-  #hint {
-    position: absolute;
-    top: 0.6em;
-    right: 0.8em;
-    color: #0d1b2a;
-    font-size: clamp(0.75rem, 2.2vw, 1rem);
-    opacity: 0.7;
-    user-select: none;
-  }
-  #back-link {
-    position: absolute;
-    top: 0.6em;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #0d1b2a;
-    font-weight: bold;
-    text-decoration: none;
-    background: rgba(255,255,255,0.55);
-    padding: 0.35em 0.9em;
-    border-radius: 999px;
-    font-size: clamp(0.8rem, 2.2vw, 1rem);
-    z-index: 5;
-  }
+  .credit { position: absolute; bottom: 0.6em; width: 100%; text-align: center; font-size: clamp(0.85rem, 2.2vw, 1.1rem); color: #ffe9a8; text-shadow: 0 2px 4px rgba(0,0,0,0.4); pointer-events: none; }
+  #hud { position: absolute; top: 0.6em; left: 0.8em; color: var(--dark); font-size: clamp(1rem, 3vw, 1.6rem); font-weight: bold; text-shadow: 0 2px 4px rgba(255,255,255,0.5); user-select: none; }
+  #hint { position: absolute; top: 0.6em; right: 0.8em; color: var(--dark); font-size: clamp(0.75rem, 2.2vw, 1rem); opacity: 0.7; user-select: none; }
+  #back-link { position: absolute; top: 0.6em; left: 50%; transform: translateX(-50%); color: var(--dark); font-weight: bold; text-decoration: none; background: rgba(255,255,255,0.55); padding: 0.35em 0.9em; border-radius: 999px; font-size: clamp(0.8rem, 2.2vw, 1rem); z-index: 5; }
   #back-link:hover { background: rgba(255,255,255,0.8); }
+  .mode-pick { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 0.8em; }
+  .mode-card { background: rgba(255,255,255,0.12); border: 3px solid transparent; border-radius: 16px; padding: 1em 1.4em; cursor: pointer; color: #fff; min-width: 130px; text-align: center; }
+  .mode-card:hover { border-color: var(--accent); }
+  .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
 </style>
 </head>
 <body>
@@ -127,20 +34,53 @@
   <canvas id="game"></canvas>
   <a id="back-link" href="index.html">← Hub</a>
   <div id="hud">Score: 0</div>
-  <div id="hint">Tap / Click / Space / ↑ to jump</div>
+  <div id="hint" id="hint2p" style="display:none"></div>
 
-  <div class="overlay" id="start-screen">
+  <!-- Mode select -->
+  <div class="overlay" id="mode-screen">
+    <h1>SKY JUMPER</h1>
+    <p>Choose your mode</p>
+    <div class="mode-pick">
+      <div class="mode-card" id="mode-solo">
+        <div class="ico">🐤</div>1 Player<br/><small>Space / Tap to jump</small>
+      </div>
+      <div class="mode-card" id="mode-2p">
+        <div class="ico">👥</div>2 Players<br/><small>P1: Space &nbsp; P2: Enter</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1P Start -->
+  <div class="overlay hidden" id="start-screen">
     <h1>GAMER HUB</h1>
     <h2>Sky Jumper</h2>
-    <p>Jump over obstacles. Don't get hit!</p>
+    <p>Tap / click / Space / ↑ to jump higher &amp; dodge obstacles.</p>
     <button class="btn" id="start-btn">Start Game</button>
   </div>
 
+  <!-- 2P Start -->
+  <div class="overlay hidden" id="start-screen-2p">
+    <h1>SKY JUMPER</h1>
+    <h2>2 Players</h2>
+    <p>🔴 P1 jumps: Space / tap left half</p>
+    <p>🔵 P2 jumps: Enter / tap right half</p>
+    <p>Last bird alive wins!</p>
+    <button class="btn" id="start-btn-2p">Start Game</button>
+  </div>
+
+  <!-- Game Over (1P) -->
   <div class="overlay hidden" id="gameover-screen">
     <h1>GAME OVER</h1>
     <p id="final-score">Score: 0</p>
     <p id="best-score">Best: 0</p>
     <button class="btn" id="restart-btn">Play Again</button>
+  </div>
+
+  <!-- Game Over (2P) -->
+  <div class="overlay hidden" id="gameover-screen-2p">
+    <h1 id="winner-title">P1 WINS!</h1>
+    <p id="final-score-2p"></p>
+    <button class="btn" id="restart-btn-2p">Play Again</button>
   </div>
 
   <div class="credit">Made by Atharv Tripathi</div>
@@ -151,14 +91,25 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const hud = document.getElementById('hud');
-  const startScreen = document.getElementById('start-screen');
-  const gameoverScreen = document.getElementById('gameover-screen');
-  const startBtn = document.getElementById('start-btn');
-  const restartBtn = document.getElementById('restart-btn');
-  const finalScoreEl = document.getElementById('final-score');
-  const bestScoreEl = document.getElementById('best-score');
+  const modeScreen      = document.getElementById('mode-screen');
+  const startScreen     = document.getElementById('start-screen');
+  const startScreen2p   = document.getElementById('start-screen-2p');
+  const gameoverScreen  = document.getElementById('gameover-screen');
+  const gameover2p      = document.getElementById('gameover-screen-2p');
+  const startBtn        = document.getElementById('start-btn');
+  const startBtn2p      = document.getElementById('start-btn-2p');
+  const restartBtn      = document.getElementById('restart-btn');
+  const restartBtn2p    = document.getElementById('restart-btn-2p');
+  const finalScoreEl    = document.getElementById('final-score');
+  const bestScoreEl     = document.getElementById('best-score');
+  const winnerTitle     = document.getElementById('winner-title');
+  const finalScore2p    = document.getElementById('final-score-2p');
+  const BEST_KEY = 'gamerhub_best_score';
 
+  const GRAVITY = 2.6;
+  const JUMP_VELOCITY = -0.95;
   let width, height, groundY;
+
   function resize() {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
@@ -167,107 +118,118 @@
   window.addEventListener('resize', resize);
   resize();
 
-  const GRAVITY = 2.6;
-  const JUMP_VELOCITY = -0.95;
+  let mode = 'solo';
+  let p1, p2, obstacles, clouds, score, speed, running, lastTime, spawnTimer;
+  let p1Alive, p2Alive;
 
-  let player, obstacles, clouds, score, speed, running, lastTime, spawnTimer;
-  const BEST_KEY = 'gamerhub_best_score';
+  document.getElementById('mode-solo').addEventListener('click', () => {
+    mode = 'solo'; modeScreen.classList.add('hidden'); startScreen.classList.remove('hidden');
+  });
+  document.getElementById('mode-2p').addEventListener('click', () => {
+    mode = '2p'; modeScreen.classList.add('hidden'); startScreen2p.classList.remove('hidden');
+  });
+
+  function makePlayer(xFrac, color, bgColor) {
+    return { x: width * xFrac, y: groundY, vy: 0, size: Math.min(width, height) * 0.06, color, bgColor };
+  }
 
   function init() {
-    player = {
-      x: width * 0.15,
-      y: groundY,
-      vy: 0,
-      size: Math.min(width, height) * 0.06,
-    };
-    obstacles = [];
-    clouds = [];
-    for (let i = 0; i < 5; i++) {
-      clouds.push({
-        x: Math.random() * width,
-        y: Math.random() * height * 0.4,
-        size: 30 + Math.random() * 50,
-        speed: 0.01 + Math.random() * 0.02,
-      });
-    }
-    score = 0;
-    speed = height * 0.35;
-    running = true;
-    spawnTimer = 0;
-    lastTime = performance.now();
+    p1 = makePlayer(0.12, '#ff6b6b', '#fff');
+    p2 = mode === '2p' ? makePlayer(0.20, '#4ecdc4', '#fff') : null;
+    p1Alive = true; p2Alive = true;
+    obstacles = []; clouds = [];
+    for (let i = 0; i < 5; i++) clouds.push({ x: Math.random() * width, y: Math.random() * height * 0.4, size: 30 + Math.random() * 50, speed: 0.01 + Math.random() * 0.02 });
+    score = 0; speed = height * 0.35; running = true; spawnTimer = 0; lastTime = performance.now();
     requestAnimationFrame(loop);
   }
 
-  function jump() {
-    if (!running) return;
-    player.vy += JUMP_VELOCITY * height;
+  function jumpPlayer(pl) {
+    if (!pl || !running) return;
+    pl.vy += JUMP_VELOCITY * height;
+  }
+
+  // Input
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); if (running) jumpPlayer(p1); else tryStart(); }
+    if (e.code === 'Enter' && mode === '2p') { e.preventDefault(); if (running) jumpPlayer(p2); }
+  });
+
+  canvas.addEventListener('pointerdown', e => {
+    if (!running) { tryStart(); return; }
+    if (mode === '2p') {
+      if (e.clientX < width / 2) jumpPlayer(p1); else jumpPlayer(p2);
+    } else { jumpPlayer(p1); }
+  });
+
+  function tryStart() {
+    if (!startScreen.classList.contains('hidden') || !startScreen2p.classList.contains('hidden')) return;
+    if (!gameoverScreen.classList.contains('hidden')) { startGame(); }
+    if (!gameover2p.classList.contains('hidden')) { startGame(); }
+  }
+
+  function startGame() {
+    [modeScreen, startScreen, startScreen2p, gameoverScreen, gameover2p].forEach(el => el.classList.add('hidden'));
+    init();
+  }
+
+  startBtn.addEventListener('click', startGame);
+  startBtn2p.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', () => { gameoverScreen.classList.add('hidden'); modeScreen.classList.remove('hidden'); });
+  restartBtn2p.addEventListener('click', () => { gameover2p.classList.add('hidden'); modeScreen.classList.remove('hidden'); });
+
+  function updatePlayer(pl, dt) {
+    pl.vy += GRAVITY * height * dt;
+    pl.y += pl.vy * dt;
+    if (pl.y >= groundY) { pl.y = groundY; pl.vy = 0; }
+    else if (pl.y < 0) { pl.y = 0; pl.vy = 0; }
   }
 
   function spawnObstacle() {
     const size = height * (0.04 + Math.random() * 0.05);
-    obstacles.push({
-      x: width + size,
-      y: groundY + player.size - size,
-      size,
-      color: ['#ef476f', '#06d6a0', '#118ab2', '#ffd166'][Math.floor(Math.random() * 4)],
-    });
+    obstacles.push({ x: width + size, y: groundY + Math.min(p1.size, p2 ? p2.size : p1.size) - size, size, color: ['#ef476f','#06d6a0','#118ab2','#ffd166'][Math.floor(Math.random() * 4)] });
+  }
+
+  function collidesWithObstacles(pl) {
+    for (const o of obstacles) {
+      if (pl.x < o.x + o.size && pl.x + pl.size > o.x && pl.y < o.y + o.size && pl.y + pl.size > o.y) return true;
+    }
+    return false;
   }
 
   function update(dt) {
-    // player physics
-    player.vy += GRAVITY * height * dt;
-    player.y += player.vy * dt;
-    if (player.y >= groundY) {
-      player.y = groundY;
-      player.vy = 0;
-    } else if (player.y < 0) {
-      player.y = 0;
-      player.vy = 0;
-    }
+    if (p1Alive) updatePlayer(p1, dt);
+    if (p2 && p2Alive) updatePlayer(p2, dt);
 
-    // clouds
-    clouds.forEach(c => {
-      c.x -= c.speed * speed * dt;
-      if (c.x < -c.size) {
-        c.x = width + c.size;
-        c.y = Math.random() * height * 0.4;
-      }
-    });
+    clouds.forEach(c => { c.x -= c.speed * speed * dt; if (c.x < -c.size) { c.x = width + c.size; c.y = Math.random() * height * 0.4; } });
 
-    // obstacles
     spawnTimer -= dt;
     if (spawnTimer <= 0) {
       spawnObstacle();
-      spawnTimer = 0.9 + Math.random() * 1.0 - Math.min(score / 4000, 0.5);
-      spawnTimer = Math.max(spawnTimer, 0.45);
+      spawnTimer = Math.max(0.45, 0.9 + Math.random() - Math.min(score / 4000, 0.5));
     }
     obstacles.forEach(o => o.x -= speed * dt);
     obstacles = obstacles.filter(o => o.x > -o.size);
 
-    // score & speed
     score += dt * 60;
     speed += dt * 2;
 
-    // collision
-    const px = player.x, py = player.y, ps = player.size;
-    for (const o of obstacles) {
-      const ox = o.x, oy = o.y, os = o.size;
-      if (px < ox + os && px + ps > ox && py < oy + os && py + ps > oy) {
-        gameOver();
-        break;
-      }
+    if (p1Alive && collidesWithObstacles(p1)) {
+      p1Alive = false;
+      if (mode === 'solo') { gameOver1P(); return; }
+    }
+    if (p2 && p2Alive && collidesWithObstacles(p2)) {
+      p2Alive = false;
+    }
+    if (mode === '2p' && (!p1Alive || !p2Alive)) {
+      gameOver2P(); return;
     }
   }
 
   function draw() {
     ctx.clearRect(0, 0, width, height);
-
     // sun
     ctx.fillStyle = '#fff6c8';
-    ctx.beginPath();
-    ctx.arc(width * 0.85, height * 0.18, Math.min(width, height) * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-
+    ctx.beginPath(); ctx.arc(width * 0.85, height * 0.18, Math.min(width, height) * 0.08, 0, Math.PI * 2); ctx.fill();
     // clouds
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     clouds.forEach(c => {
@@ -277,92 +239,65 @@
       ctx.arc(c.x - c.size * 0.4, c.y + c.size * 0.1, c.size * 0.35, 0, Math.PI * 2);
       ctx.fill();
     });
-
     // ground
-    ctx.fillStyle = '#7cb518';
-    ctx.fillRect(0, groundY + player.size, width, height - groundY - player.size);
-    ctx.fillStyle = '#5a8a12';
-    ctx.fillRect(0, groundY + player.size, width, height * 0.02);
-
-    // player
-    ctx.fillStyle = '#ff6b6b';
-    roundRect(ctx, player.x, player.y, player.size, player.size, player.size * 0.2);
-    ctx.fill();
-    // eye
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(player.x + player.size * 0.7, player.y + player.size * 0.3, player.size * 0.12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#0d1b2a';
-    ctx.beginPath();
-    ctx.arc(player.x + player.size * 0.74, player.y + player.size * 0.3, player.size * 0.06, 0, Math.PI * 2);
-    ctx.fill();
-
+    ctx.fillStyle = '#7cb518'; ctx.fillRect(0, groundY + (p1 ? p1.size : 0), width, height);
+    ctx.fillStyle = '#5a8a12'; ctx.fillRect(0, groundY + (p1 ? p1.size : 0), width, height * 0.02);
     // obstacles
-    obstacles.forEach(o => {
-      ctx.fillStyle = o.color;
-      roundRect(ctx, o.x, o.y, o.size, o.size, o.size * 0.15);
-      ctx.fill();
-    });
+    obstacles.forEach(o => { ctx.fillStyle = o.color; roundRect(ctx, o.x, o.y, o.size, o.size, o.size * 0.15); ctx.fill(); });
+    // birds
+    if (p1Alive) drawBird(p1);
+    if (p2 && p2Alive) drawBird(p2);
+    // score
+    hud.textContent = mode === '2p' ? 'Score: ' + Math.floor(score) : 'Score: ' + Math.floor(score);
+    // 2P labels
+    if (mode === '2p') {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.font = 'bold ' + (height * 0.025) + 'px sans-serif';
+      ctx.textAlign = 'left';
+      if (p1Alive) ctx.fillText('P1', p1.x, p1.y - 6);
+      if (p2Alive) ctx.fillText('P2', p2.x, p2.y - 6);
+    }
+  }
 
-    hud.textContent = 'Score: ' + Math.floor(score);
+  function drawBird(pl) {
+    ctx.fillStyle = pl.color;
+    roundRect(ctx, pl.x, pl.y, pl.size, pl.size, pl.size * 0.2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(pl.x + pl.size * 0.7, pl.y + pl.size * 0.3, pl.size * 0.12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0d1b2a';
+    ctx.beginPath(); ctx.arc(pl.x + pl.size * 0.74, pl.y + pl.size * 0.3, pl.size * 0.06, 0, Math.PI * 2); ctx.fill();
   }
 
   function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
 
   function loop(now) {
     if (!running) return;
     const dt = Math.min((now - lastTime) / 1000, 0.05);
     lastTime = now;
-    update(dt);
-    draw();
+    update(dt); draw();
     requestAnimationFrame(loop);
   }
 
-  function gameOver() {
+  function gameOver1P() {
     running = false;
-    const finalScore = Math.floor(score);
-    const best = Math.max(finalScore, parseInt(localStorage.getItem(BEST_KEY) || '0', 10));
+    const final = Math.floor(score);
+    const best = Math.max(final, parseInt(localStorage.getItem(BEST_KEY) || '0', 10));
     localStorage.setItem(BEST_KEY, best);
-    finalScoreEl.textContent = 'Score: ' + finalScore;
+    finalScoreEl.textContent = 'Score: ' + final;
     bestScoreEl.textContent = 'Best: ' + best;
     gameoverScreen.classList.remove('hidden');
   }
 
-  function startGame() {
-    startScreen.classList.add('hidden');
-    gameoverScreen.classList.add('hidden');
-    init();
+  function gameOver2P() {
+    running = false;
+    if (p1Alive && !p2Alive)       winnerTitle.textContent = '🔴 P1 WINS!';
+    else if (!p1Alive && p2Alive)  winnerTitle.textContent = '🔵 P2 WINS!';
+    else                           winnerTitle.textContent = "IT'S A DRAW!";
+    finalScore2p.textContent = 'Score reached: ' + Math.floor(score);
+    gameover2p.classList.remove('hidden');
   }
-
-  startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', startGame);
-
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' || e.code === 'ArrowUp') {
-      e.preventDefault();
-      if (!running && !startScreen.classList.contains('hidden')) {
-        startGame();
-      } else if (!running && !gameoverScreen.classList.contains('hidden')) {
-        startGame();
-      } else {
-        jump();
-      }
-    }
-  });
-
-  canvas.addEventListener('pointerdown', () => {
-    if (!running) return;
-    jump();
-  });
 })();
 </script>
 </body>

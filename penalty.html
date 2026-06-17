@@ -7,79 +7,61 @@
 <link rel="stylesheet" href="style.css" />
 <style>
   body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; overflow: hidden; }
-  .stats { display: flex; gap: 2em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.4em 0; }
-  canvas {
-    border-radius: 12px;
-    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
-    max-width: 92vw;
-    max-height: 50vh;
-    background: #3a9d23;
-  }
-  .message {
-    min-height: 1.6em;
-    font-size: clamp(1.1rem, 4vw, 1.6rem);
-    font-weight: bold;
-    margin: 0.4em 0;
-  }
+  .stats { display: flex; gap: 1.4em; font-size: clamp(0.9rem, 3.5vw, 1.3rem); font-weight: bold; margin: 0.3em 0; flex-wrap: wrap; justify-content: center; }
+  canvas { border-radius: 12px; box-shadow: 0 8px 0 rgba(0,0,0,0.15); max-width: 92vw; max-height: 44vh; background: #3a9d23; }
+  .message { min-height: 1.6em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.3em 0; text-align: center; }
+  .controls-row { display: flex; gap: 1em; align-items: flex-start; justify-content: center; width: 100%; flex-wrap: wrap; }
+  .aim-label { font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 4px; opacity: 0.8; }
   .aim-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 8px;
-    width: min(92vw, 320px);
-    margin: 0.4em 0 0.8em;
+    gap: 6px;
+    width: min(46vw, 220px);
   }
   .aim-grid button {
-    font-size: 1.6rem;
-    padding: 0.6em 0;
-    border: none;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.6);
-    color: var(--dark);
-    cursor: pointer;
+    font-size: 1.3rem; padding: 0.5em 0; border: none; border-radius: 10px;
+    background: rgba(255,255,255,0.6); color: var(--dark); cursor: pointer;
     box-shadow: 0 4px 0 rgba(0,0,0,0.12);
   }
   .aim-grid button:active { transform: translateY(2px); box-shadow: none; }
-  .aim-grid button:disabled { opacity: 0.5; cursor: default; }
-
+  .aim-grid button:disabled { opacity: 0.4; cursor: default; }
+  .aim-grid.confused button { background: rgba(255,100,100,0.4); animation: shake 0.15s infinite; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+  .confuse-row { display: flex; gap: 0.8em; align-items: center; justify-content: center; margin: 0.3em 0; flex-wrap: wrap; }
+  .confuse-btn {
+    padding: 0.4em 1em; border: none; border-radius: 999px; font-weight: bold;
+    background: #ef476f; color: #fff; cursor: pointer; font-size: clamp(0.85rem, 2.5vw, 1rem);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+  .confuse-btn:disabled { opacity: 0.35; cursor: default; }
   .overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(13,27,42,0.6);
-    color: #fff;
-    text-align: center;
-    padding: 1em;
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(13,27,42,0.7); color: #fff; text-align: center; padding: 1em;
   }
   .overlay.hidden { display: none; }
   .overlay h1 { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
   .overlay p { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
-  .player-pick { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 1em; }
+  .mode-pick, .player-pick { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 0.8em; }
+  .mode-card {
+    background: rgba(255,255,255,0.12); border: 3px solid transparent;
+    border-radius: 16px; padding: 1em 1.4em; cursor: pointer; color: #fff; min-width: 130px; font-size: 1.1rem;
+  }
+  .mode-card:hover { border-color: var(--accent); }
+  .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
   .player-card {
-    background: rgba(255,255,255,0.12);
-    border: 3px solid transparent;
-    border-radius: 16px;
-    padding: 1em 1.4em;
-    cursor: pointer;
-    color: #fff;
-    min-width: 140px;
+    background: rgba(255,255,255,0.12); border: 3px solid transparent;
+    border-radius: 16px; padding: 1em 1.4em; cursor: pointer; color: #fff; min-width: 140px;
   }
   .player-card:hover { border-color: var(--accent); }
-  .player-card .jersey {
-    width: 64px; height: 64px;
-    border-radius: 12px;
-    margin: 0 auto 0.4em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.6rem;
-    font-weight: bold;
-  }
-  .ronaldo .jersey { background: linear-gradient(135deg, #d52b1e 50%, #046a38 50%); }
+  .player-card .jersey { width: 64px; height: 64px; border-radius: 12px; margin: 0 auto 0.4em; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: bold; }
+  .ronaldo .jersey { background: linear-gradient(135deg, #d52b1e 50%, #046a38 50%); color: #fff; }
   .messi .jersey { background: repeating-linear-gradient(90deg, #75aadb 0 10px, #fff 10px 20px); color: #333; }
+  #waiting-badge {
+    background: rgba(255,220,80,0.9); color: #333; border-radius: 8px;
+    padding: 0.4em 1em; font-weight: bold; font-size: 0.9rem; text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -88,45 +70,66 @@
     <h1>PENALTY SHOOTOUT</h1>
     <span class="spacer"></span>
   </div>
-
   <div class="stats">
     <span id="player-label">Player</span>
-    <span>Round: <span id="round">1</span>/5</span>
-    <span>Score: <span id="score">0</span></span>
+    <span>Round: <span id="round">1</span>/<span id="total-rounds">5</span></span>
+    <span id="score-display">Score: <span id="score">0</span></span>
   </div>
-
-  <canvas id="game" width="360" height="420"></canvas>
+  <canvas id="game" width="360" height="400"></canvas>
   <div class="message" id="message">Pick where to aim!</div>
-  <div class="aim-grid" id="aim-grid">
-    <button data-zone="0">↖</button>
-    <button data-zone="1">↑</button>
-    <button data-zone="2">↗</button>
-    <button data-zone="3">↙</button>
-    <button data-zone="4">↓</button>
-    <button data-zone="5">↘</button>
+  <div class="confuse-row" id="confuse-row">
+    <button class="confuse-btn" id="confuse-btn">😵 Confuse Keeper (<span id="confuse-count">3</span> left)</button>
   </div>
-
+  <div class="controls-row" id="controls-row">
+    <div id="shooter-side">
+      <div class="aim-label" id="shooter-label">🎯 Aim here</div>
+      <div class="aim-grid" id="aim-grid">
+        <button data-zone="0">↖</button><button data-zone="1">↑</button><button data-zone="2">↗</button>
+        <button data-zone="3">↙</button><button data-zone="4">↓</button><button data-zone="5">↘</button>
+      </div>
+    </div>
+    <div id="keeper-side" style="display:none">
+      <div class="aim-label" id="keeper-label">🧤 Pick dive direction</div>
+      <div class="aim-grid confused" id="keeper-grid">
+        <button data-zone="0">↖</button><button data-zone="1">↑</button><button data-zone="2">↗</button>
+        <button data-zone="3">↙</button><button data-zone="4">↓</button><button data-zone="5">↘</button>
+      </div>
+    </div>
+  </div>
   <div class="credit">Made by Atharv Tripathi</div>
 
-  <div class="overlay" id="pick-screen">
+  <!-- Mode select -->
+  <div class="overlay" id="mode-screen">
     <h1>PENALTY SHOOTOUT</h1>
-    <p>Choose your player, then pick a corner to shoot at the goalkeeper.</p>
-    <p>5 penalties &mdash; how many can you score?</p>
-    <div class="player-pick">
-      <div class="player-card ronaldo" data-name="Ronaldo" data-number="7" data-color="#d52b1e">
-        <div class="jersey">7</div>
-        <div>Ronaldo</div>
+    <p>Choose your mode</p>
+    <div class="mode-pick">
+      <div class="mode-card" id="mode-bot">
+        <div class="ico">🤖</div>Bot Goalkeeper<br/><small>You vs AI keeper</small>
       </div>
-      <div class="player-card messi" data-name="Messi" data-number="10" data-color="#75aadb">
-        <div class="jersey">10</div>
-        <div>Messi</div>
+      <div class="mode-card" id="mode-friend">
+        <div class="ico">👥</div>2 Players<br/><small>Take turns shooting & keeping</small>
       </div>
     </div>
   </div>
 
+  <!-- Player select -->
+  <div class="overlay hidden" id="pick-screen">
+    <h1>PENALTY SHOOTOUT</h1>
+    <p>Choose your player &mdash; 5 penalties, score as many as you can!</p>
+    <div class="player-pick">
+      <div class="player-card ronaldo" data-name="Ronaldo" data-number="7" data-color="#d52b1e">
+        <div class="jersey">7</div><div>Ronaldo</div>
+      </div>
+      <div class="player-card messi" data-name="Messi" data-number="10" data-color="#75aadb">
+        <div class="jersey">10</div><div>Messi</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
   <div class="overlay hidden" id="result-screen">
     <h1 id="result-title">RESULT</h1>
-    <p id="result-text">Score: 0/5</p>
+    <p id="result-text"></p>
     <button class="btn" id="restart-btn">Play Again</button>
   </div>
 
@@ -135,139 +138,213 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  const pickScreen = document.getElementById('pick-screen');
-  const resultScreen = document.getElementById('result-screen');
-  const resultTitle = document.getElementById('result-title');
-  const resultText = document.getElementById('result-text');
-  const restartBtn = document.getElementById('restart-btn');
-  const playerLabel = document.getElementById('player-label');
-  const roundEl = document.getElementById('round');
-  const scoreEl = document.getElementById('score');
-  const messageEl = document.getElementById('message');
-  const aimButtons = [...document.querySelectorAll('#aim-grid button')];
+
+  const modeScreen    = document.getElementById('mode-screen');
+  const pickScreen    = document.getElementById('pick-screen');
+  const resultScreen  = document.getElementById('result-screen');
+  const resultTitle   = document.getElementById('result-title');
+  const resultText    = document.getElementById('result-text');
+  const restartBtn    = document.getElementById('restart-btn');
+  const playerLabel   = document.getElementById('player-label');
+  const roundEl       = document.getElementById('round');
+  const totalRoundsEl = document.getElementById('total-rounds');
+  const scoreDisplay  = document.getElementById('score-display');
+  const scoreEl       = document.getElementById('score');
+  const messageEl     = document.getElementById('message');
+  const confuseRow    = document.getElementById('confuse-row');
+  const confuseBtn    = document.getElementById('confuse-btn');
+  const confuseCount  = document.getElementById('confuse-count');
+  const aimGrid       = document.getElementById('aim-grid');
+  const keeperSide    = document.getElementById('keeper-side');
+  const shooterSide   = document.getElementById('shooter-side');
+  const keeperGrid    = document.getElementById('keeper-grid');
+  const shooterLabel  = document.getElementById('shooter-label');
+  const keeperLabel   = document.getElementById('keeper-label');
 
   const ROUNDS = 5;
+  let mode = 'bot'; // 'bot' | '2p'
   let player = { name: 'Ronaldo', number: 7, color: '#d52b1e' };
-  let round, score, animating;
+  let round, p1Score, p2Score, animating, confuseLeft, confused;
+  let p2KeeperZone = null; // for 2P mode: chosen by P2
+  let shotZone = null;     // for 2P mode: chosen by P1
 
-  // Goal rectangle within canvas
   const goal = { x: W * 0.12, y: H * 0.08, w: W * 0.76, h: H * 0.32 };
-  // 6 zones: 3 columns x 2 rows
+  const spot = { x: W * 0.5, y: H * 0.78 };
+
   function zoneCenter(z) {
     const col = z % 3, row = Math.floor(z / 3);
     const cw = goal.w / 3, rh = goal.h / 2;
-    return {
-      x: goal.x + cw * (col + 0.5),
-      y: goal.y + rh * (row + 0.5),
-    };
+    return { x: goal.x + cw * (col + 0.5), y: goal.y + rh * (row + 0.5) };
   }
 
-  const spot = { x: W * 0.5, y: H * 0.78 };
+  // === Mode selection ===
+  document.getElementById('mode-bot').addEventListener('click', () => {
+    mode = 'bot';
+    modeScreen.classList.add('hidden');
+    pickScreen.classList.remove('hidden');
+  });
+  document.getElementById('mode-friend').addEventListener('click', () => {
+    mode = '2p';
+    modeScreen.classList.add('hidden');
+    pickScreen.classList.remove('hidden');
+  });
 
   document.querySelectorAll('.player-card').forEach(card => {
     card.addEventListener('click', () => {
-      player = {
-        name: card.dataset.name,
-        number: card.dataset.number,
-        color: card.dataset.color,
-      };
+      player = { name: card.dataset.name, number: card.dataset.number, color: card.dataset.color };
       pickScreen.classList.add('hidden');
-      playerLabel.textContent = player.name + ' (#' + player.number + ')';
       startMatch();
     });
   });
 
   function startMatch() {
-    round = 1;
-    score = 0;
-    roundEl.textContent = round;
-    scoreEl.textContent = score;
-    messageEl.textContent = 'Pick where to aim!';
+    round = 1; p1Score = 0; p2Score = 0;
+    confuseLeft = 3; confused = false;
+    updateConfuseBtn();
+    if (mode === '2p') {
+      totalRoundsEl.textContent = ROUNDS * 2;
+      scoreDisplay.innerHTML = `P1: <span id="score">0</span> &nbsp; P2: 0`;
+      keeperSide.style.display = '';
+      confuseRow.style.display = '';
+    } else {
+      totalRoundsEl.textContent = ROUNDS;
+      scoreDisplay.innerHTML = `Score: <span id="score">0</span>`;
+      keeperSide.style.display = 'none';
+      confuseRow.style.display = '';
+    }
+    playerLabel.textContent = player.name + ' (#' + player.number + ')';
+    updateRoundDisplay();
     drawScene(spot, null, null);
-    setButtonsEnabled(true);
+    enterShooterPhase();
   }
 
-  function setButtonsEnabled(enabled) {
-    aimButtons.forEach(b => b.disabled = !enabled);
+  function updateRoundDisplay() {
+    roundEl.textContent = round;
   }
 
-  function drawScene(ballPos, keeperZone, flashColor) {
-    // pitch
-    ctx.fillStyle = '#3a9d23';
-    ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 6; i++) {
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent';
-      ctx.fillRect(0, (H / 6) * i, W, H / 6);
-    }
-
-    // goal net
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 1;
-    for (let i = 1; i < 8; i++) {
-      const x = goal.x + (goal.w / 8) * i;
-      ctx.beginPath(); ctx.moveTo(x, goal.y); ctx.lineTo(x, goal.y + goal.h); ctx.stroke();
-    }
-    for (let i = 1; i < 4; i++) {
-      const y = goal.y + (goal.h / 4) * i;
-      ctx.beginPath(); ctx.moveTo(goal.x, y); ctx.lineTo(goal.x + goal.w, y); ctx.stroke();
-    }
-    // posts
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
-
-    // goalkeeper
-    const kPos = keeperZone !== null ? zoneCenter(keeperZone) : { x: goal.x + goal.w / 2, y: goal.y + goal.h / 2 };
-    drawPerson(kPos.x, kPos.y, '#222', '#ffeb3b', 'GK');
-
-    // penalty taker
-    drawPerson(spot.x, spot.y + 30, player.color, '#fff', player.number);
-
-    // ball
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(ballPos.x, ballPos.y, W * 0.025, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    if (flashColor) {
-      ctx.fillStyle = flashColor;
-      ctx.globalAlpha = 0.25;
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 1;
+  function updateScoreDisplay() {
+    if (mode === '2p') {
+      scoreDisplay.innerHTML = 'P1: ' + p1Score + ' &nbsp; P2: ' + p2Score;
+    } else {
+      scoreDisplay.innerHTML = 'Score: ' + p1Score;
     }
   }
 
-  function drawPerson(x, y, shirtColor, shortsColor, label) {
-    // head
-    ctx.fillStyle = '#f1c27d';
-    ctx.beginPath();
-    ctx.arc(x, y - 22, 9, 0, Math.PI * 2);
-    ctx.fill();
-    // body
-    ctx.fillStyle = shirtColor;
-    ctx.fillRect(x - 12, y - 14, 24, 22);
-    // shorts
-    ctx.fillStyle = shortsColor;
-    ctx.fillRect(x - 12, y + 8, 24, 8);
-    // label
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(String(label), x, y);
+  function updateConfuseBtn() {
+    confuseBtn.textContent = '😵 Confuse Keeper (' + confuseLeft + ' left)';
+    confuseBtn.disabled = confuseLeft <= 0 || animating;
   }
 
-  function animateShot(targetZone) {
+  // Confuse: override next shot's detection
+  confuseBtn.addEventListener('click', () => {
+    if (confuseLeft <= 0 || confused || animating) return;
+    confused = true;
+    confuseLeft--;
+    updateConfuseBtn();
+    messageEl.textContent = '😵 Keeper confused! Shoot now!';
+    if (mode === '2p') {
+      // scramble keeper grid labels
+      keeperGrid.classList.add('confused');
+      shuffleKeeperLabels();
+    }
+  });
+
+  function shuffleKeeperLabels() {
+    const labels = ['↖','↑','↗','↙','↓','↘'];
+    // shuffle label display but keep data-zone intact
+    const shuffled = [...labels].sort(() => Math.random() - 0.5);
+    [...keeperGrid.querySelectorAll('button')].forEach((btn, i) => { btn.textContent = shuffled[i]; });
+  }
+
+  function resetKeeperLabels() {
+    const labels = ['↖','↑','↗','↙','↓','↘'];
+    [...keeperGrid.querySelectorAll('button')].forEach((btn, i) => { btn.textContent = labels[i]; });
+    keeperGrid.classList.remove('confused');
+  }
+
+  // === 2P flow: shooter picks first, then keeper picks ===
+  function enterShooterPhase() {
+    const isP1Shooting = mode !== '2p' || (round % 2 === 1);
+    shotZone = null; p2KeeperZone = null;
+    setAimEnabled(true);
+
+    if (mode === '2p') {
+      keeperSide.style.display = '';
+      setKeeperEnabled(false);
+      if (isP1Shooting) {
+        shooterLabel.textContent = '🎯 P1 — Pick aim';
+        keeperLabel.textContent = '🧤 P2 — Pick dive direction';
+        messageEl.textContent = 'P1: pick your shot zone first!';
+      } else {
+        shooterLabel.textContent = '🎯 P2 — Pick aim';
+        keeperLabel.textContent = '🧤 P1 — Pick dive direction';
+        messageEl.textContent = 'P2: pick your shot zone first!';
+      }
+    } else {
+      messageEl.textContent = 'Pick where to aim!';
+      keeperSide.style.display = 'none';
+    }
+  }
+
+  function setAimEnabled(on) {
+    [...aimGrid.querySelectorAll('button')].forEach(b => b.disabled = !on);
+  }
+  function setKeeperEnabled(on) {
+    [...keeperGrid.querySelectorAll('button')].forEach(b => b.disabled = !on);
+  }
+
+  // Shooter picks zone
+  [...aimGrid.querySelectorAll('button')].forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (animating) return;
+      const zone = parseInt(btn.dataset.zone, 10);
+      if (mode === '2p') {
+        shotZone = zone;
+        setAimEnabled(false);
+        // Now let keeper pick
+        setKeeperEnabled(true);
+        if (confused) shuffleKeeperLabels();
+        messageEl.textContent = (round % 2 === 1 ? 'P2' : 'P1') + ': pick dive direction!';
+      } else {
+        // Bot mode: shoot immediately
+        shootNow(zone);
+      }
+    });
+  });
+
+  // Keeper picks zone (2P only)
+  [...keeperGrid.querySelectorAll('button')].forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (animating || shotZone === null) return;
+      p2KeeperZone = parseInt(btn.dataset.zone, 10);
+      setKeeperEnabled(false);
+      resetKeeperLabels();
+      shootNow(shotZone, p2KeeperZone);
+    });
+  });
+
+  function shootNow(zone, overrideKeeperZone) {
     animating = true;
-    setButtonsEnabled(false);
-    const keeperZone = Math.floor(Math.random() * 6);
-    const target = zoneCenter(targetZone);
+    setAimEnabled(false);
+    confuseBtn.disabled = true;
+
+    let keeperZone;
+    if (mode === '2p') {
+      keeperZone = overrideKeeperZone;
+    } else {
+      // Bot: 50% chance to correctly detect and dive to shot zone
+      // Confused: always picks a wrong zone
+      if (confused) {
+        const wrong = [...Array(6).keys()].filter(z => z !== zone);
+        keeperZone = wrong[Math.floor(Math.random() * wrong.length)];
+      } else {
+        keeperZone = Math.random() < 0.50 ? zone : Math.floor(Math.random() * 6);
+      }
+    }
+
+    confused = false;
+
+    const target = zoneCenter(zone);
     const duration = 420;
     const start = performance.now();
 
@@ -276,63 +353,120 @@
       const x = spot.x + (target.x - spot.x) * t;
       const y = spot.y + (target.y - spot.y) * t;
       drawScene({ x, y }, t > 0.15 ? keeperZone : null, null);
-      if (t < 1) {
-        requestAnimationFrame(frame);
-      } else {
-        resolveShot(targetZone, keeperZone, target);
-      }
+      if (t < 1) { requestAnimationFrame(frame); }
+      else { resolveShot(zone, keeperZone, target); }
     }
     requestAnimationFrame(frame);
   }
 
-  function resolveShot(shotZone, keeperZone, ballEnd) {
-    const saved = shotZone === keeperZone;
+  function resolveShot(shotZ, keeperZ, ballEnd) {
+    const saved = shotZ === keeperZ;
+    const isP1Shooting = mode !== '2p' || (round % 2 === 1);
+
     if (saved) {
-      messageEl.textContent = 'SAVED! 🧤';
-      drawScene(ballEnd, keeperZone, 'rgba(239,71,111,0.5)');
+      messageEl.textContent = '🧤 SAVED!';
+      drawScene(ballEnd, keeperZ, 'rgba(239,71,111,0.4)');
     } else {
-      score++;
-      scoreEl.textContent = score;
-      messageEl.textContent = 'GOAL! ⚽🎉';
-      drawScene(ballEnd, keeperZone, 'rgba(6,214,160,0.5)');
+      messageEl.textContent = '⚽ GOAL! 🎉';
+      if (mode === '2p') {
+        if (isP1Shooting) p1Score++; else p2Score++;
+      } else {
+        p1Score++;
+      }
+      updateScoreDisplay();
+      drawScene(ballEnd, keeperZ, 'rgba(6,214,160,0.4)');
     }
 
     setTimeout(() => {
-      if (round >= ROUNDS) {
+      animating = false;
+      const totalRounds = mode === '2p' ? ROUNDS * 2 : ROUNDS;
+      if (round >= totalRounds) {
         showResult();
       } else {
         round++;
-        roundEl.textContent = round;
-        messageEl.textContent = 'Pick where to aim!';
+        updateRoundDisplay();
+        updateConfuseBtn();
         drawScene(spot, null, null);
-        setButtonsEnabled(true);
+        enterShooterPhase();
       }
-      animating = false;
     }, 1100);
   }
 
   function showResult() {
-    let title, text;
-    if (score === ROUNDS) { title = 'PERFECT!'; }
-    else if (score >= ROUNDS - 1) { title = 'GREAT JOB!'; }
-    else if (score >= ROUNDS / 2) { title = 'NOT BAD!'; }
-    else { title = 'TOUGH LUCK'; }
-    resultTitle.textContent = title;
-    resultText.textContent = player.name + ' scored ' + score + '/' + ROUNDS + ' penalties!';
     resultScreen.classList.remove('hidden');
+    if (mode === '2p') {
+      if (p1Score > p2Score) { resultTitle.textContent = 'P1 WINS! 🏆'; }
+      else if (p2Score > p1Score) { resultTitle.textContent = 'P2 WINS! 🏆'; }
+      else { resultTitle.textContent = "IT'S A DRAW!"; }
+      resultText.textContent = 'P1: ' + p1Score + ' goals  |  P2: ' + p2Score + ' goals';
+    } else {
+      const labels = ['TOUGH LUCK','NOT BAD!','GREAT JOB!','GREAT JOB!','AMAZING!','PERFECT! 🏆'];
+      resultTitle.textContent = labels[Math.min(p1Score, 5)];
+      resultText.textContent = player.name + ' scored ' + p1Score + '/' + ROUNDS + ' penalties!';
+    }
   }
-
-  aimButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (animating) return;
-      animateShot(parseInt(btn.dataset.zone, 10));
-    });
-  });
 
   restartBtn.addEventListener('click', () => {
     resultScreen.classList.add('hidden');
-    startMatch();
+    modeScreen.classList.remove('hidden');
   });
+
+  // ===== Canvas drawing =====
+  function drawScene(ballPos, keeperZone, flashColor) {
+    ctx.fillStyle = '#3a9d23';
+    ctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent';
+      ctx.fillRect(0, (H / 6) * i, W, H / 6);
+    }
+    // net
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 8; i++) { const x = goal.x + goal.w / 8 * i; ctx.beginPath(); ctx.moveTo(x, goal.y); ctx.lineTo(x, goal.y + goal.h); ctx.stroke(); }
+    for (let i = 1; i < 4; i++) { const y = goal.y + goal.h / 4 * i; ctx.beginPath(); ctx.moveTo(goal.x, y); ctx.lineTo(goal.x + goal.w, y); ctx.stroke(); }
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
+    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+
+    // zone lines (faint, helps players aim)
+    ctx.strokeStyle = 'rgba(255,255,200,0.2)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(goal.x + goal.w / 3, goal.y); ctx.lineTo(goal.x + goal.w / 3, goal.y + goal.h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(goal.x + goal.w * 2 / 3, goal.y); ctx.lineTo(goal.x + goal.w * 2 / 3, goal.y + goal.h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(goal.x, goal.y + goal.h / 2); ctx.lineTo(goal.x + goal.w, goal.y + goal.h / 2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // goalkeeper
+    const kPos = keeperZone !== null ? zoneCenter(keeperZone) : { x: goal.x + goal.w / 2, y: goal.y + goal.h / 2 };
+    drawPerson(kPos.x, kPos.y, '#222', '#ffeb3b', 'GK');
+    if (confused) {
+      ctx.font = '1.4rem sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('😵', kPos.x, kPos.y - 28);
+    }
+
+    // player
+    drawPerson(spot.x, spot.y + 28, player.color, '#fff', player.number);
+
+    // ball
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(ballPos.x, ballPos.y, W * 0.025, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    if (flashColor) {
+      ctx.fillStyle = flashColor; ctx.globalAlpha = 0.3;
+      ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawPerson(x, y, shirt, shorts, label) {
+    ctx.fillStyle = '#f1c27d';
+    ctx.beginPath(); ctx.arc(x, y - 22, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = shirt; ctx.fillRect(x - 12, y - 14, 24, 22);
+    ctx.fillStyle = shorts; ctx.fillRect(x - 12, y + 8, 24, 8);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(String(label), x, y);
+  }
 
   drawScene(spot, null, null);
 })();
