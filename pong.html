@@ -25,6 +25,11 @@
   .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
   #p1-label { color: #ffd166; font-size: 0.7em; display: block; }
   #p2-label { color: #06d6a0; font-size: 0.7em; display: block; }
+  .controls-row { display: flex; justify-content: space-between; width: min(100%, 700px); padding: 0.3em 1.2em 0.6em; box-sizing: border-box; }
+  .ctrl-group { display: flex; flex-direction: column; align-items: center; gap: 0.4em; }
+  .ctrl-label { font-size: 0.75rem; font-weight: bold; color: #fff; opacity: 0.8; }
+  .ctrl-btn { width: 56px; height: 48px; font-size: 1.4rem; border: none; border-radius: 12px; background: rgba(255,255,255,0.18); color: #fff; cursor: pointer; touch-action: none; user-select: none; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .ctrl-btn:active { transform: translateY(3px); box-shadow: none; }
 </style>
 </head>
 <body>
@@ -39,6 +44,18 @@
     <span><span id="p2-label"></span><span id="ai-score">0</span></span>
   </div>
   <div class="game-wrap"><canvas id="game"></canvas></div>
+  <div class="controls-row">
+    <div class="ctrl-group" id="p1-controls">
+      <span class="ctrl-label" id="ctrl-label-p1">P1</span>
+      <button class="ctrl-btn" id="p1-up" aria-label="P1 up">▲</button>
+      <button class="ctrl-btn" id="p1-down" aria-label="P1 down">▼</button>
+    </div>
+    <div class="ctrl-group" id="p2-controls" style="display:none">
+      <span class="ctrl-label" id="ctrl-label-p2">P2</span>
+      <button class="ctrl-btn" id="p2-up" aria-label="P2 up">▲</button>
+      <button class="ctrl-btn" id="p2-down" aria-label="P2 down">▼</button>
+    </div>
+  </div>
   <div class="credit">Made by Atharv Tripathi</div>
 
   <!-- Mode select -->
@@ -47,10 +64,10 @@
     <p>Choose your mode</p>
     <div class="mode-pick">
       <div class="mode-card" id="mode-bot">
-        <div class="ico">🤖</div>vs Bot<br/><small>Mouse / W·S to move</small>
+        <div class="ico">🤖</div>vs Bot<br/><small>Mouse / W·S / ▲▼ to move</small>
       </div>
       <div class="mode-card" id="mode-2p">
-        <div class="ico">👥</div>2 Players<br/><small>P1: W·S &nbsp; P2: ↑·↓</small>
+        <div class="ico">👥</div>2 Players<br/><small>P1: W·S·▲▼ &nbsp; P2: ↑·↓·▲▼</small>
       </div>
     </div>
   </div>
@@ -75,6 +92,9 @@
   const aiScoreEl     = document.getElementById('ai-score');
   const p1Label       = document.getElementById('p1-label');
   const p2Label       = document.getElementById('p2-label');
+  const p2Controls    = document.getElementById('p2-controls');
+  const ctrlLabelP1   = document.getElementById('ctrl-label-p1');
+  const ctrlLabelP2   = document.getElementById('ctrl-label-p2');
 
   const WIN_SCORE = 5;
   let W, H, paddleW, paddleH;
@@ -93,12 +113,14 @@
   document.getElementById('mode-bot').addEventListener('click', () => {
     mode = 'bot';
     p1Label.textContent = 'YOU'; p2Label.textContent = 'BOT';
+    ctrlLabelP1.textContent = 'YOU'; p2Controls.style.display = 'none';
     modeScreen.classList.add('hidden');
     startGame();
   });
   document.getElementById('mode-2p').addEventListener('click', () => {
     mode = '2p';
     p1Label.textContent = 'P1'; p2Label.textContent = 'P2';
+    ctrlLabelP1.textContent = 'P1'; ctrlLabelP2.textContent = 'P2'; p2Controls.style.display = '';
     modeScreen.classList.add('hidden');
     startGame();
   });
@@ -139,15 +161,29 @@
   });
   window.addEventListener('keyup', e => { keys[e.key] = false; });
 
+  const btn = { p1Up: false, p1Down: false, p2Up: false, p2Down: false };
+  function bindHold(el, setter) {
+    const press = e => { e.preventDefault(); setter(true); };
+    const release = () => setter(false);
+    el.addEventListener('pointerdown', press);
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointerleave', release);
+    el.addEventListener('pointercancel', release);
+  }
+  bindHold(document.getElementById('p1-up'),   v => btn.p1Up = v);
+  bindHold(document.getElementById('p1-down'), v => btn.p1Down = v);
+  bindHold(document.getElementById('p2-up'),   v => btn.p2Up = v);
+  bindHold(document.getElementById('p2-down'), v => btn.p2Down = v);
+
   function update(dt) {
     const spd = H * 1.1;
-    if (keys['w'] || keys['W']) player.y -= spd * dt;
-    if (keys['s'] || keys['S']) player.y += spd * dt;
+    if (keys['w'] || keys['W'] || btn.p1Up)   player.y -= spd * dt;
+    if (keys['s'] || keys['S'] || btn.p1Down) player.y += spd * dt;
     player.y = Math.min(Math.max(player.y, 0), H - player.h);
 
     if (mode === '2p') {
-      if (keys['ArrowUp'])   ai.y -= spd * dt;
-      if (keys['ArrowDown']) ai.y += spd * dt;
+      if (keys['ArrowUp']   || btn.p2Up)   ai.y -= spd * dt;
+      if (keys['ArrowDown'] || btn.p2Down) ai.y += spd * dt;
       ai.y = Math.min(Math.max(ai.y, 0), H - ai.h);
     } else {
       // AI bot follows ball

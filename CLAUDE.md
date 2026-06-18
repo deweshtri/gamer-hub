@@ -20,7 +20,7 @@ Every game has a "vs Bot" / "2 Players" mode-select screen:
 - **Sky Jumper**: P1 Space / left-tap, P2 Enter / right-tap — two birds dodge shared obstacles, last alive wins
 - **Snake**: P1 WASD, P2 arrow keys — walls wrap around (no death on wall hit), 30s timer
 - **Tic-Tac-Toe**: both players click the same board in turns
-- **Pong**: P1 W/S, P2 arrow keys (or drag your own half of the screen)
+- **Pong**: P1 W/S, P2 arrow keys (or drag your own half of the screen, or on-screen ▲/▼ buttons below the canvas — P1's pair always shown, P2's pair only in 2-Player mode)
 - **Whack-a-Mole**: split screen, separate 3x3 grid per player
 - **Memory Match**: turn-based; the player who finds a match goes again
 - **Penalty Shootout**: P1 picks the shot zone, P2 picks the keeper dive zone (sequential/sealed choice); bot keeper has a 50% detection chance; 3 "confuse" tokens per match scramble the keeper-side controls
