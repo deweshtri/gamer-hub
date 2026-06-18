@@ -115,6 +115,17 @@ html, body {
   font-size: 3.2rem;
   margin-bottom: 0.3em;
 }
+.game-card.coming-soon {
+  background: rgba(255,255,255,0.3);
+  border: 3px dashed rgba(13,27,42,0.3);
+  cursor: default;
+  opacity: 0.75;
+}
+.game-card.coming-soon:hover {
+  transform: none;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.3);
+}
 .game-card h3 {
   margin: 0 0 0.3em;
   font-size: 1.25rem;
