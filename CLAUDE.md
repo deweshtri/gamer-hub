@@ -1,6 +1,6 @@
 # Gamer Hub
 
-A 7-game browser arcade, "Made by Atharv Tripathi" credited on every page. Static HTML/CSS/JS, no build step or framework — each game is a self-contained `.html` file plus a shared `style.css`.
+An 8-game browser arcade, "Made by Atharv Tripathi" credited on every page. Static HTML/CSS/JS, no build step or framework — each game is a self-contained `.html` file plus a shared `style.css`.
 
 ## Run locally
 ```
@@ -13,7 +13,7 @@ then open http://localhost:8000/
 - Live site: https://deweshtri.github.io/gamer-hub/ (GitHub Pages, branch `main`, root)
 
 ## Games
-`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`
+`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`
 
 ## Multiplayer control scheme
 Every game has a "vs Bot" / "2 Players" mode-select screen:
@@ -24,6 +24,7 @@ Every game has a "vs Bot" / "2 Players" mode-select screen:
 - **Whack-a-Mole**: split screen, separate 3x3 grid per player
 - **Memory Match**: turn-based; the player who finds a match goes again
 - **Penalty Shootout**: P1 picks the shot zone, P2 picks the keeper dive zone (sequential/sealed choice); bot keeper has a 50% detection chance; 3 "confuse" tokens per match scramble the keeper-side controls
+- **Rock Paper Scissors**: P1 then P2 pick in sequence on the same buttons (sealed — picks show as 🔒 until both are in, then reveal together); vs Bot uses a uniform-random AI; first to 3 round wins takes the match
 
 ## Design decision: Ronaldo/Messi in Penalty Shootout
 Drawn as simple colored jersey shapes with numbers (7 and 10) and name labels — **not** real photos or likeness art, to avoid copyright/right-of-publicity issues. If adding more real athletes or characters later, keep using this same abstracted approach.

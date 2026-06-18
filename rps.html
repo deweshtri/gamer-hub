@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Gamer Hub - Rock Paper Scissors</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; }
+  .stats { display: flex; gap: 1.8em; font-size: clamp(1rem, 4vw, 1.4rem); font-weight: bold; margin: 0.4em 0; flex-wrap: wrap; justify-content: center; }
+  .message { min-height: 1.6em; font-size: clamp(1rem, 4vw, 1.4rem); font-weight: bold; text-align: center; margin: 0.3em 0 0.6em; padding: 0 1em; }
+  .message.msg-p1 { color: #ef476f; }
+  .message.msg-p2 { color: #118ab2; }
+  .reveal-row { display: flex; align-items: center; justify-content: center; gap: 1.4em; margin: 0.6em 0 1em; }
+  .reveal-slot { text-align: center; }
+  .reveal-slot .label { font-size: 0.9rem; font-weight: bold; opacity: 0.75; margin-bottom: 0.3em; }
+  .emoji-box { width: 80px; height: 80px; font-size: 2.6rem; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.6); border-radius: 16px; box-shadow: 0 4px 0 rgba(0,0,0,0.12); }
+  .vs-label { font-size: 1.2rem; font-weight: bold; opacity: 0.6; }
+  .choice-grid { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 0.4em; }
+  .choice-btn { display: flex; flex-direction: column; align-items: center; gap: 0.2em; font-size: 2.2rem; background: rgba(255,255,255,0.6); border: none; border-radius: 16px; padding: 0.6em 1em; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.12); transition: transform 0.06s ease; }
+  .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.12); }
+  .choice-btn:disabled { opacity: 0.35; cursor: default; }
+  .choice-btn small { font-size: 0.65rem; font-weight: bold; }
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(13,27,42,0.7); color: #fff; text-align: center; padding: 1em; }
+  .overlay.hidden { display: none; }
+  .overlay h1 { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .overlay p { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
+  .mode-pick { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 0.8em; }
+  .mode-card { background: rgba(255,255,255,0.12); border: 3px solid transparent; border-radius: 16px; padding: 1em 1.4em; cursor: pointer; color: #fff; min-width: 140px; text-align: center; }
+  .mode-card:hover { border-color: var(--accent); }
+  .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back-link" href="index.html">← Hub</a>
+    <h1>ROCK PAPER SCISSORS</h1>
+    <span class="spacer"></span>
+  </div>
+  <div class="stats">
+    <span id="round-display">Round 1</span>
+    <span id="score-display">You: 0 &nbsp; Bot: 0</span>
+  </div>
+  <div class="message" id="message">Pick your move!</div>
+  <div class="reveal-row">
+    <div class="reveal-slot">
+      <div class="label" id="label1">You</div>
+      <div class="emoji-box" id="slot1">❓</div>
+    </div>
+    <div class="vs-label">VS</div>
+    <div class="reveal-slot">
+      <div class="label" id="label2">Bot</div>
+      <div class="emoji-box" id="slot2">❓</div>
+    </div>
+  </div>
+  <div class="choice-grid" id="choice-grid">
+    <button class="choice-btn" data-choice="rock">🪨<small>Rock</small></button>
+    <button class="choice-btn" data-choice="paper">📄<small>Paper</small></button>
+    <button class="choice-btn" data-choice="scissors">✂️<small>Scissors</small></button>
+  </div>
+  <div class="credit">Made by Atharv Tripathi</div>
+
+  <div class="overlay" id="mode-screen">
+    <h1>ROCK PAPER SCISSORS</h1>
+    <p>First to 3 wins. Choose your mode</p>
+    <div class="mode-pick">
+      <div class="mode-card" id="mode-bot">
+        <div class="ico">🤖</div>vs Bot<br/><small>You vs random AI</small>
+      </div>
+      <div class="mode-card" id="mode-2p">
+        <div class="ico">👥</div>2 Players<br/><small>Sealed picks, same device</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="result-screen">
+    <h1 id="result-title">RESULT</h1>
+    <p id="result-text"></p>
+    <button class="btn" id="restart-btn">Play Again</button>
+  </div>
+
+<script>
+(() => {
+  const roundDisplay = document.getElementById('round-display');
+  const scoreDisplay = document.getElementById('score-display');
+  const messageEl    = document.getElementById('message');
+  const label1        = document.getElementById('label1');
+  const label2        = document.getElementById('label2');
+  const slot1         = document.getElementById('slot1');
+  const slot2         = document.getElementById('slot2');
+  const choiceGrid    = document.getElementById('choice-grid');
+  const modeScreen    = document.getElementById('mode-screen');
+  const resultScreen  = document.getElementById('result-screen');
+  const resultTitle   = document.getElementById('result-title');
+  const resultText    = document.getElementById('result-text');
+  const restartBtn    = document.getElementById('restart-btn');
+
+  const EMOJI = { rock: '🪨', paper: '📄', scissors: '✂️' };
+  const BEATS = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+  const WINS_NEEDED = 3;
+
+  let mode = 'bot'; // 'bot' | '2p'
+  let round, p1Score, p2Score, phase, p1Choice, p2Choice, locked;
+
+  document.getElementById('mode-bot').addEventListener('click', () => { mode = 'bot'; modeScreen.classList.add('hidden'); startMatch(); });
+  document.getElementById('mode-2p').addEventListener('click', () => { mode = '2p'; modeScreen.classList.add('hidden'); startMatch(); });
+  restartBtn.addEventListener('click', () => { resultScreen.classList.add('hidden'); modeScreen.classList.remove('hidden'); });
+
+  [...choiceGrid.querySelectorAll('.choice-btn')].forEach(btn => {
+    btn.addEventListener('click', () => onChoice(btn.dataset.choice));
+  });
+
+  function startMatch() {
+    round = 1; p1Score = 0; p2Score = 0;
+    label1.textContent = mode === '2p' ? 'P1' : 'You';
+    label2.textContent = mode === '2p' ? 'P2' : 'Bot';
+    updateScoreDisplay();
+    beginRound();
+  }
+
+  function beginRound() {
+    p1Choice = null; p2Choice = null; locked = false;
+    roundDisplay.textContent = 'Round ' + round;
+    slot1.textContent = '❓'; slot2.textContent = '❓';
+    enableChoices(true);
+    if (mode === 'bot') {
+      phase = 'p1';
+      setMessage('Pick your move!', null);
+    } else {
+      phase = 'p1';
+      setMessage("🔴 P1's turn — pick in secret!", 1);
+    }
+  }
+
+  function setMessage(text, player) {
+    messageEl.textContent = text;
+    messageEl.className = 'message' + (player === 1 ? ' msg-p1' : player === 2 ? ' msg-p2' : '');
+  }
+
+  function enableChoices(on) {
+    [...choiceGrid.querySelectorAll('.choice-btn')].forEach(b => b.disabled = !on);
+  }
+
+  function randomChoice() {
+    const opts = ['rock', 'paper', 'scissors'];
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
+
+  function onChoice(choice) {
+    if (locked) return;
+
+    if (mode === 'bot') {
+      p1Choice = choice;
+      slot1.textContent = EMOJI[choice];
+      enableChoices(false);
+      locked = true;
+      setMessage('🤖 Bot is choosing...', null);
+      setTimeout(() => {
+        p2Choice = randomChoice();
+        slot2.textContent = EMOJI[p2Choice];
+        finishRound(p1Choice, p2Choice);
+      }, 600);
+      return;
+    }
+
+    // 2 player sealed flow
+    if (phase === 'p1') {
+      p1Choice = choice;
+      slot1.textContent = '🔒';
+      phase = 'p2';
+      setMessage('🔵 P2\'s turn — pick in secret!', 2);
+    } else if (phase === 'p2') {
+      p2Choice = choice;
+      slot2.textContent = '🔒';
+      enableChoices(false);
+      locked = true;
+      setMessage('🥁 Revealing...', null);
+      setTimeout(() => {
+        slot1.textContent = EMOJI[p1Choice];
+        slot2.textContent = EMOJI[p2Choice];
+        finishRound(p1Choice, p2Choice);
+      }, 700);
+    }
+  }
+
+  function finishRound(c1, c2) {
+    let winner; // 0 tie, 1, 2
+    if (c1 === c2) winner = 0;
+    else if (BEATS[c1] === c2) winner = 1;
+    else winner = 2;
+
+    if (winner === 1) p1Score++;
+    else if (winner === 2) p2Score++;
+    updateScoreDisplay();
+
+    if (mode === 'bot') {
+      if (winner === 0) setMessage("🤝 It's a tie!", null);
+      else if (winner === 1) setMessage('🎉 You win this round!', null);
+      else setMessage('🤖 Bot wins this round!', null);
+    } else {
+      if (winner === 0) setMessage("🤝 It's a tie!", null);
+      else if (winner === 1) setMessage('🔴 P1 wins this round!', 1);
+      else setMessage('🔵 P2 wins this round!', 2);
+    }
+
+    setTimeout(() => {
+      if (p1Score >= WINS_NEEDED || p2Score >= WINS_NEEDED) {
+        showResult();
+      } else {
+        round++;
+        beginRound();
+      }
+    }, 1300);
+  }
+
+  function updateScoreDisplay() {
+    scoreDisplay.textContent = label1.textContent + ': ' + p1Score + '   ' + label2.textContent + ': ' + p2Score;
+  }
+
+  function showResult() {
+    if (mode === 'bot') {
+      if (p1Score > p2Score) resultTitle.textContent = 'YOU WIN! 🏆';
+      else resultTitle.textContent = 'BOT WINS! 🤖';
+      resultText.textContent = 'You: ' + p1Score + '  |  Bot: ' + p2Score;
+    } else {
+      if (p1Score > p2Score) resultTitle.textContent = 'P1 WINS! 🏆';
+      else resultTitle.textContent = 'P2 WINS! 🏆';
+      resultText.textContent = 'P1: ' + p1Score + '  |  P2: ' + p2Score;
+    }
+    resultScreen.classList.remove('hidden');
+  }
+})();
+</script>
+</body>
+</html>
