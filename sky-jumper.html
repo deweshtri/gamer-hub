@@ -119,7 +119,7 @@
   resize();
 
   let mode = 'solo';
-  let p1, p2, obstacles, clouds, score, speed, running, lastTime, spawnTimer;
+  let p1, p2, obstacles, clouds, score, speed, running, lastTime, spawnTimer, ceilingSpawnTimer;
   let p1Alive, p2Alive;
 
   document.getElementById('mode-solo').addEventListener('click', () => {
@@ -139,7 +139,7 @@
     p1Alive = true; p2Alive = true;
     obstacles = []; clouds = [];
     for (let i = 0; i < 5; i++) clouds.push({ x: Math.random() * width, y: Math.random() * height * 0.4, size: 30 + Math.random() * 50, speed: 0.01 + Math.random() * 0.02 });
-    score = 0; speed = height * 0.35; running = true; spawnTimer = 0; lastTime = performance.now();
+    score = 0; speed = height * 0.35; running = true; spawnTimer = 0; ceilingSpawnTimer = 1.2; lastTime = performance.now();
     requestAnimationFrame(loop);
   }
 
@@ -184,14 +184,24 @@
     else if (pl.y < 0) { pl.y = 0; pl.vy = 0; }
   }
 
-  function spawnObstacle() {
-    const size = height * (0.04 + Math.random() * 0.05);
-    obstacles.push({ x: width + size, y: groundY + Math.min(p1.size, p2 ? p2.size : p1.size) - size, size, color: ['#ef476f','#06d6a0','#118ab2','#ffd166'][Math.floor(Math.random() * 4)] });
+  const OBSTACLE_COLORS = ['#ef476f','#06d6a0','#118ab2','#ffd166'];
+
+  function spawnGroundObstacle() {
+    const w = height * (0.045 + Math.random() * 0.035);
+    const h = height * (0.12 + Math.random() * 0.14);
+    const y = groundY + Math.min(p1.size, p2 ? p2.size : p1.size) - h;
+    obstacles.push({ x: width + w, y, w, h, color: OBSTACLE_COLORS[Math.floor(Math.random() * 4)] });
+  }
+
+  function spawnCeilingObstacle() {
+    const w = height * (0.045 + Math.random() * 0.035);
+    const h = height * (0.1 + Math.random() * 0.12);
+    obstacles.push({ x: width + w, y: 0, w, h, color: OBSTACLE_COLORS[Math.floor(Math.random() * 4)] });
   }
 
   function collidesWithObstacles(pl) {
     for (const o of obstacles) {
-      if (pl.x < o.x + o.size && pl.x + pl.size > o.x && pl.y < o.y + o.size && pl.y + pl.size > o.y) return true;
+      if (pl.x < o.x + o.w && pl.x + pl.size > o.x && pl.y < o.y + o.h && pl.y + pl.size > o.y) return true;
     }
     return false;
   }
@@ -204,11 +214,16 @@
 
     spawnTimer -= dt;
     if (spawnTimer <= 0) {
-      spawnObstacle();
+      spawnGroundObstacle();
       spawnTimer = Math.max(0.45, 0.9 + Math.random() - Math.min(score / 4000, 0.5));
     }
+    ceilingSpawnTimer -= dt;
+    if (ceilingSpawnTimer <= 0) {
+      spawnCeilingObstacle();
+      ceilingSpawnTimer = Math.max(0.9, 1.6 + Math.random() - Math.min(score / 6000, 0.6));
+    }
     obstacles.forEach(o => o.x -= speed * dt);
-    obstacles = obstacles.filter(o => o.x > -o.size);
+    obstacles = obstacles.filter(o => o.x > -o.w);
 
     score += dt * 60;
     speed += dt * 2;
@@ -243,7 +258,7 @@
     ctx.fillStyle = '#7cb518'; ctx.fillRect(0, groundY + (p1 ? p1.size : 0), width, height);
     ctx.fillStyle = '#5a8a12'; ctx.fillRect(0, groundY + (p1 ? p1.size : 0), width, height * 0.02);
     // obstacles
-    obstacles.forEach(o => { ctx.fillStyle = o.color; roundRect(ctx, o.x, o.y, o.size, o.size, o.size * 0.15); ctx.fill(); });
+    obstacles.forEach(o => { ctx.fillStyle = o.color; roundRect(ctx, o.x, o.y, o.w, o.h, Math.min(o.w, o.h) * 0.15); ctx.fill(); });
     // birds
     if (p1Alive) drawBird(p1);
     if (p2 && p2Alive) drawBird(p2);
