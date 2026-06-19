@@ -8,7 +8,9 @@
 <style>
   body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; overflow: hidden; }
   .stats { display: flex; gap: 1.4em; font-size: clamp(0.9rem, 3.5vw, 1.3rem); font-weight: bold; margin: 0.3em 0; flex-wrap: wrap; justify-content: center; }
-  canvas { border-radius: 12px; box-shadow: 0 8px 0 rgba(0,0,0,0.15); max-width: 92vw; max-height: 44vh; background: #3a9d23; }
+  .game-wrap { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 0.5em; position: relative; }
+  canvas { background: #6ec8f2; border-radius: 12px; box-shadow: 0 8px 0 rgba(0,0,0,0.15); touch-action: none; max-width: 100%; max-height: 100%; display: block; }
+  .flash-overlay { position: absolute; inset: 0; margin: auto; border-radius: 12px; opacity: 0; transition: opacity 0.15s ease; pointer-events: none; }
   .message { min-height: 1.6em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.3em 0; text-align: center; }
   .controls-row { display: flex; gap: 1em; align-items: flex-start; justify-content: center; width: 100%; flex-wrap: wrap; }
   .aim-label { font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 4px; opacity: 0.8; }
@@ -75,7 +77,10 @@
     <span>Round: <span id="round">1</span>/<span id="total-rounds">5</span></span>
     <span id="score-display">Score: <span id="score">0</span></span>
   </div>
-  <canvas id="game" width="360" height="400"></canvas>
+  <div class="game-wrap">
+    <canvas id="game"></canvas>
+    <div class="flash-overlay" id="flash-overlay"></div>
+  </div>
   <div class="message" id="message">Pick where to aim!</div>
   <div class="confuse-row" id="confuse-row">
     <button class="confuse-btn" id="confuse-btn">😵 Confuse Keeper (<span id="confuse-count">3</span> left)</button>
@@ -133,11 +138,12 @@
     <button class="btn" id="restart-btn">Play Again</button>
   </div>
 
-<script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
 (() => {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  const canvas        = document.getElementById('game');
+  const flashEl       = document.getElementById('flash-overlay');
 
   const modeScreen    = document.getElementById('mode-screen');
   const pickScreen    = document.getElementById('pick-screen');
@@ -149,7 +155,6 @@
   const roundEl       = document.getElementById('round');
   const totalRoundsEl = document.getElementById('total-rounds');
   const scoreDisplay  = document.getElementById('score-display');
-  const scoreEl       = document.getElementById('score');
   const messageEl     = document.getElementById('message');
   const confuseRow    = document.getElementById('confuse-row');
   const confuseBtn    = document.getElementById('confuse-btn');
@@ -168,13 +173,142 @@
   let p2KeeperZone = null; // for 2P mode: chosen by P2
   let shotZone = null;     // for 2P mode: chosen by P1
 
-  const goal = { x: W * 0.12, y: H * 0.08, w: W * 0.76, h: H * 0.32 };
-  const spot = { x: W * 0.5, y: H * 0.78 };
+  // ===== Three.js 3D scene =====
+  const GOAL_W = 6, GOAL_H = 2.15, SPOT_Z = 9;
+  const spot3D = { x: 0, y: 0.0, z: SPOT_Z };
 
-  function zoneCenter(z) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x6ec8f2);
+  scene.fog = new THREE.Fog(0x6ec8f2, 14, 30);
+
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 2.5, SPOT_Z + 4.2);
+  camera.lookAt(0, GOAL_H * 0.55, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.65);
+  sun.position.set(4, 10, 6);
+  scene.add(sun);
+
+  // pitch
+  const pitch = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 40),
+    new THREE.MeshStandardMaterial({ color: 0x3a9d23, roughness: 1 })
+  );
+  pitch.rotation.x = -Math.PI / 2;
+  scene.add(pitch);
+
+  // pitch markings
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  function lineBox(w, h, d, x, y, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lineMat);
+    m.position.set(x, y, z);
+    scene.add(m);
+  }
+  lineBox(GOAL_W + 1.6, 0.02, 0.08, 0, 0.011, 0);
+  lineBox(0.06, 0.02, 4.4, -GOAL_W * 1.05, 0.011, 2.2);
+  lineBox(0.06, 0.02, 4.4, GOAL_W * 1.05, 0.011, 2.2);
+  lineBox(GOAL_W * 2.1, 0.02, 0.06, 0, 0.011, 4.4);
+
+  // goalposts + crossbar
+  const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+  function post(x) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, GOAL_H, 12), postMat);
+    m.position.set(x, GOAL_H / 2, 0);
+    scene.add(m);
+  }
+  post(-GOAL_W / 2); post(GOAL_W / 2);
+  const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, GOAL_W, 12), postMat);
+  crossbar.rotation.z = Math.PI / 2;
+  crossbar.position.set(0, GOAL_H, 0);
+  scene.add(crossbar);
+
+  // net
+  const net = new THREE.Mesh(
+    new THREE.PlaneGeometry(GOAL_W - 0.1, GOAL_H - 0.05, 8, 6),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, wireframe: true, side: THREE.DoubleSide })
+  );
+  net.position.set(0, GOAL_H / 2, -0.32);
+  scene.add(net);
+
+  // ---- Goalkeeper ----
+  const keeperGroup = new THREE.Group();
+  const keeperTorso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.62, 0.3), new THREE.MeshStandardMaterial({ color: 0x1c1c1c }));
+  keeperTorso.position.y = 0.62;
+  const keeperShorts = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.32), new THREE.MeshStandardMaterial({ color: 0xffeb3b }));
+  keeperShorts.position.y = 0.15;
+  const keeperHead = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf1c27d }));
+  keeperHead.position.y = 1.1;
+  keeperGroup.add(keeperTorso, keeperShorts, keeperHead);
+  keeperGroup.position.set(0, 0, 0.25);
+  scene.add(keeperGroup);
+
+  // ---- Shooter ----
+  const shooterGroup = new THREE.Group();
+  const shooterTorsoMat = new THREE.MeshStandardMaterial({ color: 0xd52b1e });
+  const shooterTorso = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.6, 0.28), shooterTorsoMat);
+  shooterTorso.position.y = 0.6;
+  const shooterShorts = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.3), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+  shooterShorts.position.y = 0.14;
+  const shooterHead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf1c27d }));
+  shooterHead.position.y = 1.05;
+  shooterGroup.add(shooterTorso, shooterShorts, shooterHead);
+  shooterGroup.position.set(spot3D.x, 0, spot3D.z);
+  scene.add(shooterGroup);
+
+  function makeNumberTexture(num) {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const cctx = c.getContext('2d');
+    cctx.fillStyle = '#fff'; cctx.font = 'bold 90px sans-serif';
+    cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
+    cctx.fillText(String(num), 64, 70);
+    return new THREE.CanvasTexture(c);
+  }
+  const numberSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeNumberTexture(player.number), transparent: true }));
+  numberSprite.scale.set(0.4, 0.4, 1);
+  numberSprite.position.set(0, 1.28, 0);
+  shooterGroup.add(numberSprite);
+
+  // ball
+  const ballMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.13, 20, 20),
+    new THREE.MeshStandardMaterial({ color: 0xffffff })
+  );
+  scene.add(ballMesh);
+
+  function zone3D(z) {
     const col = z % 3, row = Math.floor(z / 3);
-    const cw = goal.w / 3, rh = goal.h / 2;
-    return { x: goal.x + cw * (col + 0.5), y: goal.y + rh * (row + 0.5) };
+    const x = -GOAL_W / 2 + (GOAL_W / 3) * (col + 0.5);
+    const y = row === 0 ? GOAL_H * 0.8 : GOAL_H * 0.22;
+    return { x, y, z: 0.05 };
+  }
+
+  function resetSceneIdle() {
+    ballMesh.position.set(spot3D.x, spot3D.y + 0.13, spot3D.z);
+    keeperGroup.position.set(0, 0, 0.25);
+    keeperGroup.rotation.z = 0;
+    keeperGroup.position.y = 0;
+    renderer.render(scene, camera);
+  }
+
+  function resize() {
+    const wrap = canvas.parentElement;
+    const W = Math.min(wrap.clientWidth - 10, 480);
+    const H = Math.min(wrap.clientHeight - 10, W * 1.05);
+    renderer.setSize(W, H, true);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+  }
+  window.addEventListener('resize', resize);
+
+  function flashScreen(color) {
+    flashEl.style.background = color;
+    flashEl.style.opacity = '1';
+    setTimeout(() => { flashEl.style.opacity = '0'; }, 380);
   }
 
   // === Mode selection ===
@@ -192,6 +326,9 @@
   document.querySelectorAll('.player-card').forEach(card => {
     card.addEventListener('click', () => {
       player = { name: card.dataset.name, number: card.dataset.number, color: card.dataset.color };
+      shooterTorsoMat.color.set(player.color);
+      numberSprite.material.map = makeNumberTexture(player.number);
+      numberSprite.material.needsUpdate = true;
       pickScreen.classList.add('hidden');
       startMatch();
     });
@@ -214,7 +351,8 @@
     }
     playerLabel.textContent = player.name + ' (#' + player.number + ')';
     updateRoundDisplay();
-    drawScene(spot, null, null);
+    resize();
+    resetSceneIdle();
     enterShooterPhase();
   }
 
@@ -243,7 +381,6 @@
     updateConfuseBtn();
     messageEl.textContent = '😵 Keeper confused! Shoot now!';
     if (mode === '2p') {
-      // scramble keeper grid labels
       keeperGrid.classList.add('confused');
       shuffleKeeperLabels();
     }
@@ -251,7 +388,6 @@
 
   function shuffleKeeperLabels() {
     const labels = ['↖','↑','↗','↙','↓','↘'];
-    // shuffle label display but keep data-zone intact
     const shuffled = [...labels].sort(() => Math.random() - 0.5);
     [...keeperGrid.querySelectorAll('button')].forEach((btn, i) => { btn.textContent = shuffled[i]; });
   }
@@ -301,12 +437,10 @@
       if (mode === '2p') {
         shotZone = zone;
         setAimEnabled(false);
-        // Now let keeper pick
         setKeeperEnabled(true);
         if (confused) shuffleKeeperLabels();
         messageEl.textContent = (round % 2 === 1 ? 'P2' : 'P1') + ': pick dive direction!';
       } else {
-        // Bot mode: shoot immediately
         shootNow(zone);
       }
     });
@@ -332,8 +466,6 @@
     if (mode === '2p') {
       keeperZone = overrideKeeperZone;
     } else {
-      // Bot: 50% chance to correctly detect and dive to shot zone
-      // Confused: always picks a wrong zone
       if (confused) {
         const wrong = [...Array(6).keys()].filter(z => z !== zone);
         keeperZone = wrong[Math.floor(Math.random() * wrong.length)];
@@ -341,31 +473,43 @@
         keeperZone = Math.random() < 0.50 ? zone : Math.floor(Math.random() * 6);
       }
     }
-
     confused = false;
 
-    const target = zoneCenter(zone);
-    const duration = 420;
+    const target = zone3D(zone);
+    const keeperTarget = zone3D(keeperZone);
+    const duration = 480;
     const start = performance.now();
 
     function frame(now) {
       const t = Math.min((now - start) / duration, 1);
-      const x = spot.x + (target.x - spot.x) * t;
-      const y = spot.y + (target.y - spot.y) * t;
-      drawScene({ x, y }, t > 0.15 ? keeperZone : null, null);
+      const bx = spot3D.x + (target.x - spot3D.x) * t;
+      const bz = spot3D.z + (target.z - spot3D.z) * t;
+      const arc = Math.sin(Math.PI * t) * 1.0;
+      const by = spot3D.y + 0.13 + (target.y - spot3D.y) * t + arc;
+      ballMesh.position.set(bx, by, bz);
+      ballMesh.rotation.x += 0.3; ballMesh.rotation.z += 0.22;
+
+      if (t > 0.15) {
+        const kt = Math.min((t - 0.15) / 0.5, 1);
+        keeperGroup.position.x = keeperTarget.x * kt;
+        keeperGroup.rotation.z = keeperTarget.x > 0 ? -kt * 0.6 : keeperTarget.x < 0 ? kt * 0.6 : 0;
+        keeperGroup.position.y = keeperTarget.y > GOAL_H * 0.5 ? kt * 0.35 : 0;
+      }
+
+      renderer.render(scene, camera);
       if (t < 1) { requestAnimationFrame(frame); }
-      else { resolveShot(zone, keeperZone, target); }
+      else { resolveShot(zone, keeperZone); }
     }
     requestAnimationFrame(frame);
   }
 
-  function resolveShot(shotZ, keeperZ, ballEnd) {
+  function resolveShot(shotZ, keeperZ) {
     const saved = shotZ === keeperZ;
     const isP1Shooting = mode !== '2p' || (round % 2 === 1);
 
     if (saved) {
       messageEl.textContent = '🧤 SAVED!';
-      drawScene(ballEnd, keeperZ, 'rgba(239,71,111,0.4)');
+      flashScreen('rgba(239,71,111,0.45)');
     } else {
       messageEl.textContent = '⚽ GOAL! 🎉';
       if (mode === '2p') {
@@ -374,11 +518,12 @@
         p1Score++;
       }
       updateScoreDisplay();
-      drawScene(ballEnd, keeperZ, 'rgba(6,214,160,0.4)');
+      flashScreen('rgba(6,214,160,0.45)');
     }
 
     setTimeout(() => {
       animating = false;
+      resetSceneIdle();
       const totalRounds = mode === '2p' ? ROUNDS * 2 : ROUNDS;
       if (round >= totalRounds) {
         showResult();
@@ -386,7 +531,6 @@
         round++;
         updateRoundDisplay();
         updateConfuseBtn();
-        drawScene(spot, null, null);
         enterShooterPhase();
       }
     }, 1100);
@@ -411,64 +555,8 @@
     modeScreen.classList.remove('hidden');
   });
 
-  // ===== Canvas drawing =====
-  function drawScene(ballPos, keeperZone, flashColor) {
-    ctx.fillStyle = '#3a9d23';
-    ctx.fillRect(0, 0, W, H);
-    for (let i = 0; i < 6; i++) {
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent';
-      ctx.fillRect(0, (H / 6) * i, W, H / 6);
-    }
-    // net
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = 1;
-    for (let i = 1; i < 8; i++) { const x = goal.x + goal.w / 8 * i; ctx.beginPath(); ctx.moveTo(x, goal.y); ctx.lineTo(x, goal.y + goal.h); ctx.stroke(); }
-    for (let i = 1; i < 4; i++) { const y = goal.y + goal.h / 4 * i; ctx.beginPath(); ctx.moveTo(goal.x, y); ctx.lineTo(goal.x + goal.w, y); ctx.stroke(); }
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
-    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
-
-    // zone lines (faint, helps players aim)
-    ctx.strokeStyle = 'rgba(255,255,200,0.2)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(goal.x + goal.w / 3, goal.y); ctx.lineTo(goal.x + goal.w / 3, goal.y + goal.h); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(goal.x + goal.w * 2 / 3, goal.y); ctx.lineTo(goal.x + goal.w * 2 / 3, goal.y + goal.h); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(goal.x, goal.y + goal.h / 2); ctx.lineTo(goal.x + goal.w, goal.y + goal.h / 2); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // goalkeeper
-    const kPos = keeperZone !== null ? zoneCenter(keeperZone) : { x: goal.x + goal.w / 2, y: goal.y + goal.h / 2 };
-    drawPerson(kPos.x, kPos.y, '#222', '#ffeb3b', 'GK');
-    if (confused) {
-      ctx.font = '1.4rem sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('😵', kPos.x, kPos.y - 28);
-    }
-
-    // player
-    drawPerson(spot.x, spot.y + 28, player.color, '#fff', player.number);
-
-    // ball
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(ballPos.x, ballPos.y, W * 0.025, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.stroke();
-
-    if (flashColor) {
-      ctx.fillStyle = flashColor; ctx.globalAlpha = 0.3;
-      ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
-    }
-  }
-
-  function drawPerson(x, y, shirt, shorts, label) {
-    ctx.fillStyle = '#f1c27d';
-    ctx.beginPath(); ctx.arc(x, y - 22, 9, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = shirt; ctx.fillRect(x - 12, y - 14, 24, 22);
-    ctx.fillStyle = shorts; ctx.fillRect(x - 12, y + 8, 24, 8);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(String(label), x, y);
-  }
-
-  drawScene(spot, null, null);
+  resize();
+  resetSceneIdle();
 })();
 </script>
 </body>
