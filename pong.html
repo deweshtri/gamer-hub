@@ -79,10 +79,11 @@
     <button class="btn" id="restart-btn">Play Again</button>
   </div>
 
-<script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
 (() => {
   const canvas        = document.getElementById('game');
-  const ctx           = canvas.getContext('2d');
   const modeScreen    = document.getElementById('mode-screen');
   const gameoverScreen = document.getElementById('gameover-screen');
   const restartBtn    = document.getElementById('restart-btn');
@@ -100,13 +101,84 @@
   let W, H, paddleW, paddleH;
   let player, ai, ball, pScore, aScore, running, lastTime, mode = 'bot';
 
+  // ===== Three.js 3D scene =====
+  const WORLD_W = 16, WORLD_D = 9;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0c1830);
+  scene.fog = new THREE.Fog(0x0c1830, 16, 30);
+
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+  camera.position.set(0, 11.5, 12.5);
+  camera.lookAt(0, 0, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  dirLight.position.set(5, 14, 6);
+  scene.add(dirLight);
+
+  const table = new THREE.Mesh(
+    new THREE.PlaneGeometry(WORLD_W, WORLD_D),
+    new THREE.MeshStandardMaterial({ color: 0x16263d, roughness: 0.9 })
+  );
+  table.rotation.x = -Math.PI / 2;
+  scene.add(table);
+
+  // dashed center line
+  const dashCount = 12;
+  for (let i = 0; i < dashCount; i++) {
+    const dash = new THREE.Mesh(
+      new THREE.BoxGeometry(0.07, 0.02, (WORLD_D / dashCount) * 0.5),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
+    );
+    dash.position.set(0, 0.011, -WORLD_D / 2 + (i + 0.5) * (WORLD_D / dashCount));
+    scene.add(dash);
+  }
+
+  // boundary walls (top/bottom)
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a3f5f });
+  [-1, 1].forEach(sign => {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(WORLD_W, 0.35, 0.18), wallMat);
+    wall.position.set(0, 0.175, sign * WORLD_D / 2);
+    scene.add(wall);
+  });
+
+  const p1Mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(0.3, 0.55, 1),
+    new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0x4a2e00, emissiveIntensity: 0.5 })
+  );
+  const p2Mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(0.3, 0.55, 1),
+    new THREE.MeshStandardMaterial({ color: 0x06d6a0, emissive: 0x00352a, emissiveIntensity: 0.5 })
+  );
+  p1Mesh.position.y = 0.275; p2Mesh.position.y = 0.275;
+  scene.add(p1Mesh, p2Mesh);
+
+  const ballMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 24, 24),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x999999, emissiveIntensity: 0.5 })
+  );
+  ballMesh.position.y = 0.3;
+  const ballLight = new THREE.PointLight(0xffffff, 0.8, 4);
+  ballMesh.add(ballLight);
+  scene.add(ballMesh);
+
+  function toWorldX(px) { return (px / W - 0.5) * WORLD_W; }
+  function toWorldZ(py) { return (py / H - 0.5) * WORLD_D; }
+
   function resize() {
     const wrap = canvas.parentElement;
     W = Math.min(wrap.clientWidth - 10, 700);
     H = Math.min(wrap.clientHeight - 10, W * 0.6);
-    canvas.width = W; canvas.height = H;
     paddleW = W * 0.018; paddleH = H * 0.2;
     if (player) { player.x = paddleW * 2; ai.x = W - paddleW * 3; }
+    renderer.setSize(W, H, true);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+    const lenZ = (paddleH / H) * WORLD_D;
+    p1Mesh.scale.z = lenZ; p2Mesh.scale.z = lenZ;
   }
   window.addEventListener('resize', resize);
 
@@ -223,13 +295,20 @@
     }
   }
 
+  function syncScene() {
+    p1Mesh.position.x = toWorldX(player.x + player.w / 2);
+    p1Mesh.position.z = toWorldZ(player.y + player.h / 2);
+    p2Mesh.position.x = toWorldX(ai.x + ai.w / 2);
+    p2Mesh.position.z = toWorldZ(ai.y + ai.h / 2);
+    ballMesh.position.x = toWorldX(ball.x);
+    ballMesh.position.z = toWorldZ(ball.y);
+    ballMesh.rotation.x += 0.12;
+    ballMesh.rotation.z += 0.08;
+  }
+
   function draw() {
-    ctx.fillStyle = '#16263d'; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2; ctx.setLineDash([8, 10]);
-    ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = '#ffd166'; ctx.fillRect(player.x, player.y, player.w, player.h);
-    ctx.fillStyle = '#06d6a0'; ctx.fillRect(ai.x, ai.y, ai.w, ai.h);
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+    syncScene();
+    renderer.render(scene, camera);
   }
 
   function loop(now) {
@@ -238,6 +317,9 @@
     lastTime = now; update(dt); draw();
     requestAnimationFrame(loop);
   }
+
+  resize();
+  draw();
 })();
 </script>
 </body>
