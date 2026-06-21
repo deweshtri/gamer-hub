@@ -296,30 +296,86 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   net.position.set(0, GOAL_H / 2, -0.32);
   scene.add(net);
 
+  // ---- Humanoid rig builder: head, neck, torso, arms+hands, legs+shoes, hair ----
+  function buildHumanoid({ jerseyColor, shortsColor = 0xffffff, skinTone = 0xf1c27d, hairColor = 0x2b1b12 }) {
+    const group = new THREE.Group();
+    const skinMat   = new THREE.MeshStandardMaterial({ color: skinTone });
+    const jerseyMat = new THREE.MeshStandardMaterial({ color: jerseyColor });
+    const shortsMat = new THREE.MeshStandardMaterial({ color: shortsColor });
+    const hairMat   = new THREE.MeshStandardMaterial({ color: hairColor });
+    const shoeMat   = new THREE.MeshStandardMaterial({ color: 0x222222 });
+
+    // legs + shoes (hip-pivoted so they can be posed/animated)
+    const legs = [];
+    [-1, 1].forEach(side => {
+      const hip = new THREE.Group();
+      hip.position.set(side * 0.12, 0.53, 0);
+      const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.46, 4, 8), skinMat);
+      leg.position.y = -0.225;
+      hip.add(leg);
+      const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.22), shoeMat);
+      shoe.position.set(0, -0.49, 0.03);
+      hip.add(shoe);
+      group.add(hip);
+      legs.push(hip);
+    });
+
+    // shorts
+    const shorts = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.24, 0.32), shortsMat);
+    shorts.position.y = 0.56;
+    group.add(shorts);
+
+    // torso
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.3, 4, 8), jerseyMat);
+    torso.position.y = 0.95;
+    group.add(torso);
+
+    // arms (pivoted at the shoulder so they can be posed/animated)
+    const arms = [];
+    [-1, 1].forEach(side => {
+      const shoulder = new THREE.Group();
+      shoulder.position.set(side * 0.25, 1.12, 0);
+      shoulder.rotation.z = side * 0.18;
+      const armMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.065, 0.4, 4, 8), skinMat);
+      armMesh.position.y = -0.265;
+      shoulder.add(armMesh);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), skinMat);
+      hand.position.y = -0.53;
+      shoulder.add(hand);
+      group.add(shoulder);
+      arms.push(shoulder);
+    });
+
+    // neck + head + hair
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.08, 0.1, 8), skinMat);
+    neck.position.y = 1.35;
+    group.add(neck);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), skinMat);
+    head.position.y = 1.5;
+    group.add(head);
+
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMat);
+    hair.position.y = 1.54;
+    group.add(hair);
+
+    return { group, torsoMat: jerseyMat, head, leftArm: arms[0], rightArm: arms[1], leftLeg: legs[0], rightLeg: legs[1] };
+  }
+
   // ---- Goalkeeper ----
   const keeperGroup = new THREE.Group();
-  const keeperTorso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.62, 0.3), new THREE.MeshStandardMaterial({ color: 0x1c1c1c }));
-  keeperTorso.position.y = 0.62;
-  const keeperShorts = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.32), new THREE.MeshStandardMaterial({ color: 0xffeb3b }));
-  keeperShorts.position.y = 0.15;
-  const keeperHead = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf1c27d }));
-  keeperHead.position.y = 1.1;
-  keeperGroup.add(keeperTorso, keeperShorts, keeperHead);
+  const keeperRig = buildHumanoid({ jerseyColor: 0x1c1c1c, shortsColor: 0xffeb3b, hairColor: 0x111111 });
+  keeperGroup.add(keeperRig.group);
   keeperGroup.position.set(0, 0, 0.25);
   scene.add(keeperGroup);
 
   // ---- Shooter ----
   const shooterGroup = new THREE.Group();
-  const shooterTorsoMat = new THREE.MeshStandardMaterial({ color: 0xd52b1e });
-  const shooterTorso = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.6, 0.28), shooterTorsoMat);
-  shooterTorso.position.y = 0.6;
-  const shooterShorts = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.3), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-  shooterShorts.position.y = 0.14;
-  const shooterHead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf1c27d }));
-  shooterHead.position.y = 1.05;
-  shooterGroup.add(shooterTorso, shooterShorts, shooterHead);
+  const shooterRig = buildHumanoid({ jerseyColor: 0xd52b1e, shortsColor: 0xffffff });
+  shooterGroup.add(shooterRig.group);
   shooterGroup.position.set(spot3D.x, 0, spot3D.z);
   scene.add(shooterGroup);
+  const shooterTorsoMat = shooterRig.torsoMat;
 
   function makeNumberTexture(num) {
     const c = document.createElement('canvas'); c.width = 128; c.height = 128;
@@ -331,7 +387,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   }
   const numberSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeNumberTexture(player.number), transparent: true }));
   numberSprite.scale.set(0.4, 0.4, 1);
-  numberSprite.position.set(0, 1.28, 0);
+  numberSprite.position.set(0, 1.82, 0);
   shooterGroup.add(numberSprite);
 
   // ball
@@ -353,6 +409,12 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     keeperGroup.position.set(0, 0, 0.25);
     keeperGroup.rotation.z = 0;
     keeperGroup.position.y = 0;
+    keeperRig.leftArm.rotation.set(0, 0, -0.18);
+    keeperRig.rightArm.rotation.set(0, 0, 0.18);
+    shooterRig.leftLeg.rotation.x = 0;
+    shooterRig.rightLeg.rotation.x = 0;
+    shooterRig.leftArm.rotation.set(0, 0, -0.18);
+    shooterRig.rightArm.rotation.set(0, 0, 0.18);
     renderer.render(scene, camera);
   }
 
@@ -551,11 +613,21 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
       ballMesh.position.set(bx, by, bz);
       ballMesh.rotation.x += 0.3; ballMesh.rotation.z += 0.22;
 
+      // shooter's kicking leg swings through early in the animation
+      const legSwing = Math.sin(Math.min(t, 0.5) / 0.5 * Math.PI) * 1.1;
+      shooterRig.rightLeg.rotation.x = -legSwing;
+      shooterRig.leftLeg.rotation.x = legSwing * 0.15;
+      shooterRig.leftArm.rotation.x = legSwing * 0.6;
+      shooterRig.rightArm.rotation.x = -legSwing * 0.4;
+
       if (t > 0.15) {
         const kt = Math.min((t - 0.15) / 0.5, 1);
         keeperGroup.position.x = keeperTarget.x * kt;
         keeperGroup.rotation.z = keeperTarget.x > 0 ? -kt * 0.6 : keeperTarget.x < 0 ? kt * 0.6 : 0;
         keeperGroup.position.y = keeperTarget.y > GOAL_H * 0.5 ? kt * 0.35 : 0;
+        // diving keeper reaches with the arm on the dive side
+        if (keeperTarget.x > 0) { keeperRig.rightArm.rotation.x = -kt * 0.9; keeperRig.rightArm.rotation.z = 0.18 + kt * 0.7; }
+        else if (keeperTarget.x < 0) { keeperRig.leftArm.rotation.x = -kt * 0.9; keeperRig.leftArm.rotation.z = -0.18 - kt * 0.7; }
       }
 
       renderer.render(scene, camera);
