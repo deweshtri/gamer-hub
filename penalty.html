@@ -226,6 +226,68 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   crossbar.position.set(0, GOAL_H, 0);
   scene.add(crossbar);
 
+  // ===== Stadium backdrop — beside the pitch only, clear of the goal/shooting corridor =====
+  function makeCrowdTexture() {
+    const cell = 4, cols = 32, rows = 12;
+    const c = document.createElement('canvas'); c.width = cols * cell; c.height = rows * cell;
+    const cctx = c.getContext('2d');
+    const colors = ['#3a3a48', '#4a4a58', '#c1444e', '#cfa83c', '#3c7a89', '#e8e8e0', '#5a8a4a'];
+    for (let r = 0; r < rows; r++) {
+      for (let col = 0; col < cols; col++) {
+        cctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+        cctx.fillRect(col * cell, r * cell, cell, cell);
+      }
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(5, 2);
+    tex.magFilter = THREE.NearestFilter;
+    return tex;
+  }
+  function makeAdBoardTexture() {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 64;
+    const cctx = c.getContext('2d');
+    const colors = ['#ef476f', '#06d6a0', '#118ab2', '#ffd166', '#7b2cbf'];
+    const segW = 512 / colors.length;
+    colors.forEach((col, i) => { cctx.fillStyle = col; cctx.fillRect(i * segW, 0, segW, 64); });
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(3, 1);
+    return tex;
+  }
+
+  const standMat = new THREE.MeshStandardMaterial({ map: makeCrowdTexture(), roughness: 1 });
+  function buildStand(w, h, d, x, y, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), standMat);
+    m.position.set(x, y, z);
+    scene.add(m);
+  }
+  // left & right stands only — well outside the penalty box lines (±6.3), beside the pitch
+  buildStand(2.2, 6, 20, -9.6, 3, 6);
+  buildStand(2.2, 6, 20, 9.6, 3, 6);
+
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x555a66 });
+  const lampMat = new THREE.MeshStandardMaterial({ color: 0xfff6c8, emissive: 0xfff6c8, emissiveIntensity: 0.6 });
+  function floodlight(x, z) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 10, 8), poleMat);
+    pole.position.set(x, 5, z);
+    scene.add(pole);
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.6, 0.5), lampMat);
+    lamp.position.set(x, 10, z);
+    scene.add(lamp);
+  }
+  floodlight(-12, 9);
+  floodlight(12, 9);
+
+  // low perimeter ad-boards beside the pitch, kept in front of the goal line (z > 0)
+  const adMat = new THREE.MeshBasicMaterial({ map: makeAdBoardTexture() });
+  function adBoard(w, h, d, x, y, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), adMat);
+    m.position.set(x, y, z);
+    scene.add(m);
+  }
+  adBoard(0.15, 0.5, 8, -6.6, 0.27, 5);
+  adBoard(0.15, 0.5, 8, 6.6, 0.27, 5);
+
   // net
   const net = new THREE.Mesh(
     new THREE.PlaneGeometry(GOAL_W - 0.1, GOAL_H - 0.05, 8, 6),
@@ -296,8 +358,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
   function resize() {
     const wrap = canvas.parentElement;
-    const W = Math.min(wrap.clientWidth - 10, 480);
-    const H = Math.min(wrap.clientHeight - 10, W * 1.05);
+    const W = Math.min(wrap.clientWidth - 10, 800);
+    const H = Math.min(wrap.clientHeight - 10, W * 0.72);
     renderer.setSize(W, H, true);
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
