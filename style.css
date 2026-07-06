@@ -135,9 +135,20 @@ html, body {
   font-size: 0.9rem;
   opacity: 0.8;
 }
-.coming-soon-banner {
-  max-width: 280px;
+.banner-row {
+  display: flex;
+  gap: 1.2em;
+  flex-wrap: wrap;
+  justify-content: center;
   margin: 0 auto 1.6em;
+  padding: 0 1.2em;
+  max-width: 640px;
+}
+.coming-soon-banner {
+  flex: 1;
+  min-width: 220px;
+  max-width: 280px;
+  margin: 0;
   padding: 1.4em 1em;
   text-align: center;
   background: rgba(255,255,255,0.3);
