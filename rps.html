@@ -6,22 +6,35 @@
 <title>Gamer Hub - Rock Paper Scissors</title>
 <link rel="stylesheet" href="style.css" />
 <style>
-  body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; }
+  body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; overflow-x: hidden; }
   .stats { display: flex; gap: 1.8em; font-size: clamp(1rem, 4vw, 1.4rem); font-weight: bold; margin: 0.4em 0; flex-wrap: wrap; justify-content: center; }
-  .message { min-height: 1.6em; font-size: clamp(1rem, 4vw, 1.4rem); font-weight: bold; text-align: center; margin: 0.3em 0 0.6em; padding: 0 1em; }
+  .message { min-height: 1.6em; font-size: clamp(1rem, 4vw, 1.4rem); font-weight: bold; text-align: center; margin: 0.2em 0 0.5em; padding: 0 1em; }
   .message.msg-p1 { color: #ef476f; }
   .message.msg-p2 { color: #118ab2; }
-  .reveal-row { display: flex; align-items: center; justify-content: center; gap: 1.4em; margin: 0.6em 0 1em; }
-  .reveal-slot { text-align: center; }
-  .reveal-slot .label { font-size: 0.9rem; font-weight: bold; opacity: 0.75; margin-bottom: 0.3em; }
-  .emoji-box { width: 80px; height: 80px; font-size: 2.6rem; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.6); border-radius: 16px; box-shadow: 0 4px 0 rgba(0,0,0,0.12); }
-  .vs-label { font-size: 1.2rem; font-weight: bold; opacity: 0.6; }
-  .choice-grid { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; margin-top: 0.4em; }
+  #arena-wrap {
+    position: relative;
+    width: min(560px, 96vw);
+    height: min(300px, 56vw);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(13,27,42,0.35);
+    margin-bottom: 0.8em;
+    background: #111e2e;
+  }
+  #arena-wrap canvas { display: block; width: 100% !important; height: 100% !important; }
+  .arena-labels {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between;
+    padding: 0.55em 1em; pointer-events: none;
+  }
+  .arena-label { font-weight: bold; font-size: 0.88rem; background: rgba(0,0,0,0.45); color: #fff; padding: 0.2em 0.75em; border-radius: 999px; }
+  .arena-vs { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-weight: bold; font-size: 1.25rem; color: rgba(255,255,255,0.65); pointer-events: none; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+  .choice-grid { display: flex; gap: 1em; flex-wrap: wrap; justify-content: center; }
   .choice-btn { display: flex; flex-direction: column; align-items: center; gap: 0.2em; font-size: 2.2rem; background: rgba(255,255,255,0.6); border: none; border-radius: 16px; padding: 0.6em 1em; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.12); transition: transform 0.06s ease; }
   .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.12); }
   .choice-btn:disabled { opacity: 0.35; cursor: default; }
   .choice-btn small { font-size: 0.65rem; font-weight: bold; }
-  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(13,27,42,0.7); color: #fff; text-align: center; padding: 1em; }
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(13,27,42,0.72); color: #fff; text-align: center; padding: 1em; z-index: 10; }
   .overlay.hidden { display: none; }
   .overlay h1 { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--accent); text-shadow: 0 4px 0 rgba(0,0,0,0.25); }
   .overlay p { font-size: clamp(0.9rem, 2.5vw, 1.2rem); margin: 0.4em 0; }
@@ -42,17 +55,16 @@
     <span id="score-display">You: 0 &nbsp; Bot: 0</span>
   </div>
   <div class="message" id="message">Pick your move!</div>
-  <div class="reveal-row">
-    <div class="reveal-slot">
-      <div class="label" id="label1">You</div>
-      <div class="emoji-box" id="slot1">❓</div>
+
+  <div id="arena-wrap">
+    <canvas id="rps-canvas"></canvas>
+    <div class="arena-labels">
+      <span class="arena-label" id="label1">You</span>
+      <span class="arena-label" id="label2">Bot</span>
     </div>
-    <div class="vs-label">VS</div>
-    <div class="reveal-slot">
-      <div class="label" id="label2">Bot</div>
-      <div class="emoji-box" id="slot2">❓</div>
-    </div>
+    <div class="arena-vs">VS</div>
   </div>
+
   <div class="choice-grid" id="choice-grid">
     <button class="choice-btn" data-choice="rock">🪨<small>Rock</small></button>
     <button class="choice-btn" data-choice="paper">📄<small>Paper</small></button>
@@ -64,168 +76,337 @@
     <h1>ROCK PAPER SCISSORS</h1>
     <p>First to 3 wins. Choose your mode</p>
     <div class="mode-pick">
-      <div class="mode-card" id="mode-bot">
-        <div class="ico">🤖</div>vs Bot<br/><small>You vs random AI</small>
-      </div>
-      <div class="mode-card" id="mode-2p">
-        <div class="ico">👥</div>2 Players<br/><small>Sealed picks, same device</small>
-      </div>
+      <div class="mode-card" id="mode-bot"><div class="ico">🤖</div>vs Bot<br/><small>You vs random AI</small></div>
+      <div class="mode-card" id="mode-2p"><div class="ico">👥</div>2 Players<br/><small>Sealed picks, same device</small></div>
     </div>
   </div>
-
   <div class="overlay hidden" id="result-screen">
     <h1 id="result-title">RESULT</h1>
     <p id="result-text"></p>
     <button class="btn" id="restart-btn">Play Again</button>
   </div>
 
-<script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 (() => {
   const roundDisplay = document.getElementById('round-display');
   const scoreDisplay = document.getElementById('score-display');
   const messageEl    = document.getElementById('message');
-  const label1        = document.getElementById('label1');
-  const label2        = document.getElementById('label2');
-  const slot1         = document.getElementById('slot1');
-  const slot2         = document.getElementById('slot2');
-  const choiceGrid    = document.getElementById('choice-grid');
-  const modeScreen    = document.getElementById('mode-screen');
-  const resultScreen  = document.getElementById('result-screen');
-  const resultTitle   = document.getElementById('result-title');
-  const resultText    = document.getElementById('result-text');
-  const restartBtn    = document.getElementById('restart-btn');
+  const label1El     = document.getElementById('label1');
+  const label2El     = document.getElementById('label2');
+  const choiceGrid   = document.getElementById('choice-grid');
+  const modeScreen   = document.getElementById('mode-screen');
+  const resultScreen = document.getElementById('result-screen');
+  const resultTitle  = document.getElementById('result-title');
+  const resultText   = document.getElementById('result-text');
+  const restartBtn   = document.getElementById('restart-btn');
+  const wrap         = document.getElementById('arena-wrap');
+  const cvs          = document.getElementById('rps-canvas');
 
-  const EMOJI = { rock: '🪨', paper: '📄', scissors: '✂️' };
+  // ── Three.js setup ──
+  const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111e2e);
+
+  // Spotlight table surface
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(16, 10),
+    new THREE.MeshPhongMaterial({ color: 0x1a3048, shininess: 30 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -2.1;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  const camera = new THREE.PerspectiveCamera(44, 2, 0.1, 40);
+  camera.position.set(0, 1.0, 8.8);
+  camera.lookAt(0, -0.3, 0);
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const keyLight = new THREE.DirectionalLight(0xfff4d0, 1.15);
+  keyLight.position.set(2, 7, 5);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(512, 512);
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0x6080ff, 0.38);
+  fillLight.position.set(-5, 3, -3);
+  scene.add(fillLight);
+  const rimLight = new THREE.DirectionalLight(0xffa060, 0.25);
+  rimLight.position.set(0, -2, -5);
+  scene.add(rimLight);
+
+  // ── Hand builder ──
+  // flip = 1 for left hand, -1 for right hand (mirrors thumb side)
+  function buildHand(skinHex, flip) {
+    const mat = new THREE.MeshPhongMaterial({ color: skinHex, shininess: 55 });
+    const root = new THREE.Group();
+
+    // Wrist / arm stub
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.215, 0.55, 10), mat);
+    arm.position.y = -0.72;
+    arm.castShadow = true;
+    root.add(arm);
+
+    // Palm
+    const palm = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.84, 0.22), mat);
+    palm.castShadow = true;
+    root.add(palm);
+
+    // Knuckle ridge
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.1, 0.26), mat);
+    ridge.position.y = 0.47;
+    root.add(ridge);
+
+    // Finger specs: local-x offset, length factor
+    const FSPECS = [
+      { x: flip * -0.265, lf: 0.88 },
+      { x: flip * -0.088, lf: 1.00 },
+      { x: flip *  0.088, lf: 0.94 },
+      { x: flip *  0.265, lf: 0.80 },
+    ];
+
+    // Build each finger as 3 articulated segments
+    const fingers = FSPECS.map(s => {
+      const base = new THREE.Group();
+      base.position.set(s.x, 0.45, 0);
+      root.add(base);
+      const segLens  = [0.30, 0.23, 0.17].map(l => l * s.lf);
+      const segRadii = [0.073, 0.065, 0.056];
+      let parent = base;
+      return segLens.map((len, i) => {
+        const sg = new THREE.Group();
+        if (i > 0) sg.position.y = segLens[i - 1] * 0.88;
+        const mesh = new THREE.Mesh(
+          new THREE.CapsuleGeometry(segRadii[i], Math.max(len - segRadii[i] * 2, 0.02), 4, 8), mat);
+        mesh.position.y = len / 2;
+        mesh.castShadow = true;
+        sg.add(mesh);
+        parent.add(sg);
+        parent = sg;
+        return sg;
+      });
+    });
+
+    // Thumb: fixed mount + animated pivot
+    const thumbMount = new THREE.Group();
+    thumbMount.position.set(flip * -0.40, 0.06, 0.05);
+    root.add(thumbMount);
+    const thumbPivot = new THREE.Group(); // rotation.z animated
+    thumbMount.add(thumbPivot);
+    const TSEGS = [[0.086, 0.28], [0.073, 0.22]];
+    let tp = thumbPivot;
+    TSEGS.forEach(([r, l]) => {
+      const sg = new THREE.Group();
+      const m = new THREE.Mesh(
+        new THREE.CapsuleGeometry(r, Math.max(l - r * 2, 0.02), 4, 8), mat);
+      m.position.y = l / 2;
+      m.castShadow = true;
+      sg.add(m);
+      tp.add(sg);
+      tp = sg;
+    });
+
+    // Gesture table: f[finger][segment] = rotation.x, tpz = thumbPivot.rotation.z
+    const G = {
+      idle:     { f: [[0.12,0.08,0.04],[0.10,0.06,0.03],[0.10,0.06,0.03],[0.12,0.08,0.04]], tpz: flip * 0.90 },
+      rock:     { f: [[1.42,1.25,0.90],[1.45,1.28,0.92],[1.40,1.25,0.90],[1.35,1.20,0.88]], tpz: flip * 0.42 },
+      paper:    { f: [[0,0,0],[0,0,0],[0,0,0],[0,0,0]],                                       tpz: flip * 1.00 },
+      scissors: { f: [[0,0,0],[0,0,0],[1.40,1.25,0.90],[1.35,1.20,0.88]],                     tpz: flip * 0.50 },
+    };
+
+    let fromG = 'idle', toG = 'idle', tt = 1.0;
+
+    function applyGesture(t) {
+      const gF = G[fromG], gT = G[toG];
+      const e = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease in-out
+      fingers.forEach((segs, fi) =>
+        segs.forEach((sg, si) => {
+          sg.rotation.x = gF.f[fi][si] + (gT.f[fi][si] - gF.f[fi][si]) * e;
+        })
+      );
+      thumbPivot.rotation.z = gF.tpz + (gT.tpz - gF.tpz) * e;
+    }
+
+    // Pump: hand bounces down then back
+    let pumpT = -1;
+    let idleTime = 0;
+
+    function update(dt) {
+      idleTime += dt;
+
+      // Gesture transition
+      if (tt < 1) {
+        tt = Math.min(1, tt + dt * 3.8);
+        applyGesture(tt);
+        if (tt >= 1) fromG = toG;
+      }
+
+      // Pump motion
+      if (pumpT >= 0) {
+        pumpT = Math.min(1, pumpT + dt * 2.6);
+        root.position.y = Math.sin(pumpT * Math.PI) * -0.55;
+        if (pumpT >= 1) { root.position.y = 0; pumpT = -1; }
+      }
+
+      // Gentle idle sway
+      if (pumpT < 0) {
+        root.rotation.z = Math.sin(idleTime * 0.9) * 0.025;
+      }
+    }
+
+    function setGesture(name) {
+      if (name === toG && tt >= 1) return;
+      fromG = toG; tt = 0; toG = name;
+    }
+    function pump() { pumpT = 0; }
+
+    // Apply idle immediately
+    applyGesture(1);
+
+    root.userData = { update, setGesture, pump };
+    return root;
+  }
+
+  // Create the two hands (same skin tone, different flip for thumb side)
+  const hand1 = buildHand(0xeea878, 1);   // left hand
+  const hand2 = buildHand(0xeea878, -1);  // right hand (thumb mirrored)
+  hand1.position.set(-2.5, -0.55, 0);
+  hand2.position.set( 2.5, -0.55, 0);
+  // Tilt palms slightly toward camera
+  hand1.rotation.x = 0.28;
+  hand2.rotation.x = 0.28;
+  scene.add(hand1, hand2);
+
+  // Resize handler
+  function resize() {
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    renderer.setSize(W, H, false);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Render loop
+  let lastT = performance.now();
+  (function loop(now) {
+    const dt = Math.min((now - lastT) / 1000, 0.05);
+    lastT = now;
+    hand1.userData.update(dt);
+    hand2.userData.update(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  })(performance.now());
+
+  // ── Game logic ──
   const BEATS = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
   const WINS_NEEDED = 3;
-
-  let mode = 'bot'; // 'bot' | '2p'
-  let round, p1Score, p2Score, phase, p1Choice, p2Choice, locked;
+  let mode = 'bot', round, p1Score, p2Score, phase, p1Choice, p2Choice, locked;
 
   document.getElementById('mode-bot').addEventListener('click', () => { mode = 'bot'; modeScreen.classList.add('hidden'); startMatch(); });
-  document.getElementById('mode-2p').addEventListener('click', () => { mode = '2p'; modeScreen.classList.add('hidden'); startMatch(); });
+  document.getElementById('mode-2p' ).addEventListener('click', () => { mode = '2p';  modeScreen.classList.add('hidden'); startMatch(); });
   restartBtn.addEventListener('click', () => { resultScreen.classList.add('hidden'); modeScreen.classList.remove('hidden'); });
-
-  [...choiceGrid.querySelectorAll('.choice-btn')].forEach(btn => {
-    btn.addEventListener('click', () => onChoice(btn.dataset.choice));
-  });
+  [...choiceGrid.querySelectorAll('.choice-btn')].forEach(b =>
+    b.addEventListener('click', () => onChoice(b.dataset.choice)));
 
   function startMatch() {
     round = 1; p1Score = 0; p2Score = 0;
-    label1.textContent = mode === '2p' ? 'P1' : 'You';
-    label2.textContent = mode === '2p' ? 'P2' : 'Bot';
-    updateScoreDisplay();
+    label1El.textContent = mode === '2p' ? 'P1' : 'You';
+    label2El.textContent = mode === '2p' ? 'P2' : 'Bot';
+    updateScore();
     beginRound();
   }
 
   function beginRound() {
     p1Choice = null; p2Choice = null; locked = false;
     roundDisplay.textContent = 'Round ' + round;
-    slot1.textContent = '❓'; slot2.textContent = '❓';
+    hand1.userData.setGesture('idle');
+    hand2.userData.setGesture('idle');
     enableChoices(true);
-    if (mode === 'bot') {
-      phase = 'p1';
-      setMessage('Pick your move!', null);
-    } else {
-      phase = 'p1';
-      setMessage("🔴 P1's turn — pick in secret!", 1);
-    }
+    if (mode === 'bot') { phase = 'p1'; setMsg('Pick your move!', 0); }
+    else                { phase = 'p1'; setMsg("🔴 P1 — pick in secret!", 1); }
   }
 
-  function setMessage(text, player) {
-    messageEl.textContent = text;
-    messageEl.className = 'message' + (player === 1 ? ' msg-p1' : player === 2 ? ' msg-p2' : '');
+  function setMsg(t, p) {
+    messageEl.textContent = t;
+    messageEl.className = 'message' + (p === 1 ? ' msg-p1' : p === 2 ? ' msg-p2' : '');
   }
-
   function enableChoices(on) {
     [...choiceGrid.querySelectorAll('.choice-btn')].forEach(b => b.disabled = !on);
   }
-
-  function randomChoice() {
-    const opts = ['rock', 'paper', 'scissors'];
-    return opts[Math.floor(Math.random() * opts.length)];
-  }
+  function rndChoice() { return ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)]; }
 
   function onChoice(choice) {
     if (locked) return;
-
     if (mode === 'bot') {
       p1Choice = choice;
-      slot1.textContent = EMOJI[choice];
-      enableChoices(false);
-      locked = true;
-      setMessage('🤖 Bot is choosing...', null);
+      // Both fists pump, then reveal
+      hand1.userData.setGesture('rock'); hand1.userData.pump();
+      hand2.userData.setGesture('rock'); hand2.userData.pump();
+      enableChoices(false); locked = true;
+      setMsg('🤖 Bot thinking...', 0);
       setTimeout(() => {
-        p2Choice = randomChoice();
-        slot2.textContent = EMOJI[p2Choice];
+        p2Choice = rndChoice();
+        hand1.userData.setGesture(p1Choice);
+        hand2.userData.setGesture(p2Choice);
         finishRound(p1Choice, p2Choice);
-      }, 600);
+      }, 750);
       return;
     }
-
-    // 2 player sealed flow
+    // 2P sealed
     if (phase === 'p1') {
       p1Choice = choice;
-      slot1.textContent = '🔒';
+      hand1.userData.setGesture('rock'); // sealed — show fist
       phase = 'p2';
-      setMessage('🔵 P2\'s turn — pick in secret!', 2);
+      setMsg("🔵 P2 — pick in secret!", 2);
     } else if (phase === 'p2') {
       p2Choice = choice;
-      slot2.textContent = '🔒';
-      enableChoices(false);
-      locked = true;
-      setMessage('🥁 Revealing...', null);
+      hand2.userData.setGesture('rock');
+      enableChoices(false); locked = true;
+      hand1.userData.pump(); hand2.userData.pump();
+      setMsg('🥁 Revealing...', 0);
       setTimeout(() => {
-        slot1.textContent = EMOJI[p1Choice];
-        slot2.textContent = EMOJI[p2Choice];
+        hand1.userData.setGesture(p1Choice);
+        hand2.userData.setGesture(p2Choice);
         finishRound(p1Choice, p2Choice);
-      }, 700);
+      }, 750);
     }
   }
 
   function finishRound(c1, c2) {
-    let winner; // 0 tie, 1, 2
-    if (c1 === c2) winner = 0;
-    else if (BEATS[c1] === c2) winner = 1;
-    else winner = 2;
-
-    if (winner === 1) p1Score++;
-    else if (winner === 2) p2Score++;
-    updateScoreDisplay();
-
+    const w = c1 === c2 ? 0 : BEATS[c1] === c2 ? 1 : 2;
+    if (w === 1) p1Score++; else if (w === 2) p2Score++;
+    updateScore();
     if (mode === 'bot') {
-      if (winner === 0) setMessage("🤝 It's a tie!", null);
-      else if (winner === 1) setMessage('🎉 You win this round!', null);
-      else setMessage('🤖 Bot wins this round!', null);
+      if (w === 0) setMsg("🤝 Tie!", 0);
+      else if (w === 1) setMsg('🎉 You win the round!', 0);
+      else setMsg('🤖 Bot wins the round!', 0);
     } else {
-      if (winner === 0) setMessage("🤝 It's a tie!", null);
-      else if (winner === 1) setMessage('🔴 P1 wins this round!', 1);
-      else setMessage('🔵 P2 wins this round!', 2);
+      if (w === 0) setMsg("🤝 Tie!", 0);
+      else if (w === 1) setMsg('🔴 P1 wins the round!', 1);
+      else setMsg('🔵 P2 wins the round!', 2);
     }
-
     setTimeout(() => {
-      if (p1Score >= WINS_NEEDED || p2Score >= WINS_NEEDED) {
-        showResult();
-      } else {
-        round++;
-        beginRound();
-      }
-    }, 1300);
+      if (p1Score >= WINS_NEEDED || p2Score >= WINS_NEEDED) showResult();
+      else { round++; beginRound(); }
+    }, 1400);
   }
 
-  function updateScoreDisplay() {
-    scoreDisplay.textContent = label1.textContent + ': ' + p1Score + '   ' + label2.textContent + ': ' + p2Score;
+  function updateScore() {
+    scoreDisplay.textContent = label1El.textContent + ': ' + p1Score + '   ' + label2El.textContent + ': ' + p2Score;
   }
-
   function showResult() {
     if (mode === 'bot') {
-      if (p1Score > p2Score) resultTitle.textContent = 'YOU WIN! 🏆';
-      else resultTitle.textContent = 'BOT WINS! 🤖';
-      resultText.textContent = 'You: ' + p1Score + '  |  Bot: ' + p2Score;
+      resultTitle.textContent = p1Score > p2Score ? 'YOU WIN! 🏆' : 'BOT WINS! 🤖';
+      resultText.textContent  = 'You: ' + p1Score + ' | Bot: ' + p2Score;
     } else {
-      if (p1Score > p2Score) resultTitle.textContent = 'P1 WINS! 🏆';
-      else resultTitle.textContent = 'P2 WINS! 🏆';
-      resultText.textContent = 'P1: ' + p1Score + '  |  P2: ' + p2Score;
+      resultTitle.textContent = p1Score > p2Score ? 'P1 WINS! 🏆' : 'P2 WINS! 🏆';
+      resultText.textContent  = 'P1: ' + p1Score + ' | P2: ' + p2Score;
     }
     resultScreen.classList.remove('hidden');
   }
