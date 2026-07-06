@@ -269,9 +269,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   scene.background = new THREE.Color(0x6ab8e8);
   scene.fog = new THREE.Fog(0xb0d8f0, 30, 90);
 
-  const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 200);
-  camera.position.set(0, 3.5, -4.5);
-  camera.lookAt(0, 2.0, 10);
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
+  camera.position.set(-9, 3.5, -1);
+  camera.lookAt(0, 2.0, 5);
 
   // Lighting
   scene.add(new THREE.AmbientLight(0xfff4e0, 0.7));
@@ -319,7 +319,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     new THREE.SphereGeometry(3, 16, 16),
     new THREE.MeshBasicMaterial({ color: 0xfff4a0, fog: false })
   );
-  sunSphere.position.set(20, 22, 60);
+  sunSphere.position.set(18, 22, 55);
   scene.add(sunSphere);
 
   // Clouds
@@ -337,7 +337,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   }
   for (let i = 0; i < 8; i++) {
     const c = makeCloud(0.55 + Math.random() * 0.5);
-    c.position.set((Math.random() - 0.5) * 40, 6 + Math.random() * 5, 8 + Math.random() * 65);
+    c.position.set(2 + Math.random() * 30, 6 + Math.random() * 5, 8 + Math.random() * 65);
     scene.add(c);
     cloudGroups.push(c);
   }
@@ -347,7 +347,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   for (let i = 0; i < 14; i++) {
     const h = 5 + Math.random() * 11;
     const m = new THREE.Mesh(new THREE.ConeGeometry(h * 0.7, h, 6), mtnMat[i % mtnMat.length]);
-    m.position.set((Math.random() - 0.5) * 60, h / 2 - 0.5, 35 + Math.random() * 80);
+    m.position.set(3 + Math.random() * 28, h / 2 - 0.5, 35 + Math.random() * 80);
     scene.add(m);
   }
 
@@ -358,8 +358,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   trunkIM.castShadow = foliageIM.castShadow = true;
   const td = new THREE.Object3D();
   for (let i = 0; i < TREE_N; i++) {
-    const s = i < TREE_N / 2 ? -1 : 1;
-    const x = s * (8 + Math.random() * 7);
+    const x = 2 + Math.random() * 11; // far side of path from side camera
     const z = Math.random() * 100;
     const sc = 0.6 + Math.random() * 0.7;
     td.scale.setScalar(sc);
@@ -437,13 +436,14 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     const col = parseInt(o.color.replace('#', ''), 16);
     const mat = new THREE.MeshPhongMaterial({ color: col, shininess: 55 });
 
-    // Stone pillar: tall box spanning the lane width
-    const pillar = new THREE.Mesh(new THREE.BoxGeometry(5.5, wH, wW * 1.2), mat);
+    // Stone pillar: visible depth for side-scroll camera
+    const wDepth = Math.max(wW * 3.5, 1.4);
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.0, wH, wDepth), mat);
     pillar.castShadow = true;
     pillar.receiveShadow = true;
     // Cap (slightly wider, adds 3D column capital)
-    const capH = wH * 0.06;
-    const capGeo = new THREE.BoxGeometry(5.8, capH, wW * 1.35);
+    const capH = wH * 0.08;
+    const capGeo = new THREE.BoxGeometry(1.2, capH, wDepth * 1.2);
     const cap = new THREE.Mesh(capGeo, mat);
     // ground: cap on top; ceiling: cap on bottom
     cap.position.y = o.ceil ? -(wH / 2 + capH / 2) : (wH / 2 + capH / 2);
@@ -493,8 +493,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
       mesh.rotation.x = Math.max(-0.45, Math.min(0.45, -pl.vy / (height * 1.5)));
     }
 
-    const p1WorldX = mode === '2p' ? -0.9 : 0;
-    const p2WorldX = 0.9;
+    const p1WorldX = mode === '2p' ? -0.35 : 0;
+    const p2WorldX = 0.35;
 
     if (p1Alive) placeBird(p1, p1Mesh, p1WorldX);
     if (p2 && p2Alive) placeBird(p2, p2Mesh, p2WorldX);
@@ -503,7 +503,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     const targetCY = p1 ? wY(p1.y + p1.size / 2) + 2.0 : 3.5;
     camTargetY += (Math.max(2.2, Math.min(5.5, targetCY)) - camTargetY) * Math.min(dt * 4, 1);
     camera.position.y = camTargetY;
-    camera.lookAt(0, camTargetY - 1.0, 10);
+    camera.lookAt(0, camTargetY - 1.2, 5);
 
     // Obstacles
     obstacles.forEach(o => {
