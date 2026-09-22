@@ -83,9 +83,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   // ── Grid constants ──
   const COLS = 20, ROWS = 20, DURATION = 30;
   // Map grid cell → world position
-  // Row 0 = top of screen (positive Z), row 19 = bottom (negative Z)
   function gx(col) { return col - (COLS - 1) / 2; }
-  function gz(row) { return (ROWS - 1) / 2 - row; }
+  function gz(row) { return row - (ROWS - 1) / 2; }
 
   // ── Three.js setup ──
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -100,7 +99,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   scene.fog = new THREE.FogExp2(0x080c18, 0.028);
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-  camera.position.set(0, 19, -13);
+  camera.position.set(0, 19, 13);
   camera.lookAt(0, 0, 0);
 
   // ── Lighting ──
@@ -367,7 +366,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
   function updateHud() {
     hudLeft.textContent = mode === '2p' ? 'P1: ' + score1 : 'Score: ' + score1;
-    if (mode === '2p') hudRight.textContent = 'P2: ' + score2;
+    if (mode === '2p') hudRight.textCo
+    
+    ntent = 'P2: ' + score2;
   }
 
   function loop(now) {
