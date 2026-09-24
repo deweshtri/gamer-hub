@@ -13,7 +13,7 @@ then open http://localhost:8000/
 - Live site: https://deweshtri.github.io/gamer-hub/ (GitHub Pages, branch `main`, root)
 
 ## Games
-`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`, `zombie-survival.html`, `neon-drift.html`, `ninja-dash.html`
+`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`, `zombie-survival.html`, `neon-drift.html`, `ninja-dash.html`, `tower-defense.html`
 
 ## Multiplayer control scheme
 Every game has a "vs Bot" / "2 Players" mode-select screen:
