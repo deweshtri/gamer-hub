@@ -13,7 +13,7 @@ then open http://localhost:8000/
 - Live site: https://deweshtri.github.io/gamer-hub/ (GitHub Pages, branch `main`, root)
 
 ## Games
-`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`, `zombie-survival.html`, `neon-drift.html`, `ninja-dash.html`, `tower-defense.html`
+`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`, `zombie-survival.html`, `neon-drift.html`, `ninja-dash.html`, `tower-defense.html`, `cube-rush.html`
 
 ## Multiplayer control scheme
 Every game has a "vs Bot" / "2 Players" mode-select screen:
@@ -28,6 +28,8 @@ Every game has a "vs Bot" / "2 Players" mode-select screen:
 
 ## Design decision: Ronaldo/Messi in Penalty Shootout
 Drawn as simple colored jersey shapes with numbers (7 and 10) and name labels — **not** real photos or likeness art, to avoid copyright/right-of-publicity issues. If adding more real athletes or characters later, keep using this same abstracted approach.
+
+Same idea for games inspired by trademarked titles: Cube Rush is a Geometry Dash-style game with an original name and art — don't use another game's name or assets.
 
 ## SEO / Search Console status (already done — don't redo)
 - Google Search Console ownership verified 2026-06-17 via HTML file method (`google4b22a97b00cfa6cf.html` in repo root)
