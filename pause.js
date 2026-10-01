@@ -78,16 +78,17 @@
     for (const f of frames) if (!canceled.delete(f.id)) realRaf(ts => f.cb(ts - pausedTotal));
     document.documentElement.classList.remove('gh-paused');
     overlay.style.display = 'none';
-    btn.textContent = '❚❚ PAUSE';
+    btn.textContent = '⏸ PAUSE';
   }
   const toggle = () => (paused ? resume() : pause());
 
   // UI
   const style = document.createElement('style');
   style.textContent = `
-    #gh-pause-btn { font-family:'Press Start 2P',monospace,sans-serif; font-size:0.55rem; letter-spacing:1px; background:rgba(0,0,0,0.55); color:#fff; border:1px solid rgba(255,255,255,0.6); border-radius:4px; padding:0.6em 0.8em; cursor:pointer; white-space:nowrap; z-index:9998; }
-    #gh-pause-btn:hover { background:rgba(0,0,0,0.8); }
-    #gh-pause-btn.gh-float { position:fixed; top:10px; right:10px; }
+    #gh-pause-btn { position:fixed; top:8px; right:10px; z-index:9998; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-weight:800; font-size:clamp(14px,2.2vw,18px); letter-spacing:1px; background:#ffd23f; color:#111; border:3px solid #111; border-radius:10px; padding:8px 14px; cursor:pointer; white-space:nowrap; box-shadow:0 4px 0 #111,0 0 16px rgba(255,210,63,0.6); }
+    #gh-pause-btn:hover { background:#ffe27a; }
+    #gh-pause-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #111; }
+    .topbar .spacer { width:clamp(110px,16vw,150px) !important; }
     #gh-pause { position:fixed; inset:0; z-index:9999; display:none; flex-direction:column; align-items:center; justify-content:center; gap:18px; background:rgba(0,0,0,0.88); color:#fff; font-family:'Press Start 2P',monospace,sans-serif; text-align:center; padding:1em; }
     #gh-pause h2 { margin:0; font-size:clamp(1.4rem,6vw,2.6rem); letter-spacing:4px; text-shadow:0 0 16px #fff; }
     #gh-pause p { margin:0; font-size:0.6rem; opacity:0.6; line-height:2; }
@@ -99,11 +100,11 @@
   const btn = document.createElement('button');
   btn.id = 'gh-pause-btn';
   btn.type = 'button';
-  btn.textContent = '❚❚ PAUSE';
+  btn.textContent = '⏸ PAUSE';
   btn.title = 'Pause (P)';
   const overlay = document.createElement('div');
   overlay.id = 'gh-pause';
-  overlay.innerHTML = '<h2>PAUSED</h2><button type="button">▶ RESUME</button><p>Press P or Esc to resume</p><a href="index.html">← BACK TO HUB</a>';
+  overlay.innerHTML = '<h2>PAUSED</h2><button type="button">▶ RESUME</button><p>Tap RESUME (or press P / Esc)</p><a href="index.html">← BACK TO HUB</a>';
   const resumeBtn = overlay.querySelector('button');
 
   const swallow = e => e.stopPropagation();
@@ -137,10 +138,7 @@
 
   function mount() {
     document.head.append(style);
-    const spacer = document.querySelector('.topbar .spacer');
-    if (spacer) spacer.replaceWith(btn);
-    else { btn.classList.add('gh-float'); document.body.append(btn); }
-    document.body.append(overlay);
+    document.body.append(btn, overlay);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
 
