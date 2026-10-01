@@ -10,7 +10,7 @@
   body { display: flex; flex-direction: column; min-height: 100vh; align-items: center; overflow: hidden; }
   .stats { display: flex; gap: 1.4em; font-size: clamp(0.9rem, 3.5vw, 1.3rem); font-weight: bold; margin: 0.3em 0; flex-wrap: wrap; justify-content: center; }
   .game-wrap { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 0.5em; position: relative; }
-  canvas { background: #6ec8f2; border-radius: 12px; box-shadow: 0 8px 0 rgba(0,0,0,0.15); touch-action: none; max-width: 100%; max-height: 100%; display: block; }
+  canvas { background: #0a0220; border-radius: 12px; box-shadow: 0 8px 0 rgba(0,0,0,0.15); touch-action: none; max-width: 100%; max-height: 100%; display: block; }
   .flash-overlay { position: absolute; inset: 0; margin: auto; border-radius: 12px; opacity: 0; transition: opacity 0.15s ease; pointer-events: none; }
   .message { min-height: 1.6em; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: bold; margin: 0.3em 0; text-align: center; }
   .controls-row { display: flex; gap: 1em; align-items: flex-start; justify-content: center; width: 100%; flex-wrap: wrap; }
@@ -66,6 +66,8 @@
     padding: 0.4em 1em; font-weight: bold; font-size: 0.9rem; text-align: center;
   }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="retro.css?v=1" />
 </head>
 <body>
   <div class="topbar">
@@ -179,25 +181,25 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   const spot3D = { x: 0, y: 0.0, z: SPOT_Z };
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(0.5);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x6ec8f2);
-  scene.fog = new THREE.Fog(0x6ec8f2, 14, 30);
+  scene.background = new THREE.Color(0x0a0220);
+  scene.fog = new THREE.Fog(0x0a0220, 16, 34);
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
   camera.position.set(0, 2.5, SPOT_Z + 4.2);
   camera.lookAt(0, GOAL_H * 0.55, 0);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.65);
+  scene.add(new THREE.AmbientLight(0xb0a8ff, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75);
   sun.position.set(4, 10, 6);
   scene.add(sun);
 
   // pitch
   const pitch = new THREE.Mesh(
     new THREE.PlaneGeometry(40, 40),
-    new THREE.MeshStandardMaterial({ color: 0x3a9d23, roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: 0x1e6b1a, roughness: 1 })
   );
   pitch.rotation.x = -Math.PI / 2;
   scene.add(pitch);
@@ -296,7 +298,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   buildStandSection(1);
 
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x555a66 });
-  const lampMat = new THREE.MeshStandardMaterial({ color: 0xfff6c8, emissive: 0xfff6c8, emissiveIntensity: 0.6 });
+  const lampMat = new THREE.MeshStandardMaterial({ color: 0xfff6c8, emissive: 0xfff6c8, emissiveIntensity: 1.4 });
   function floodlight(x, z) {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 10, 8), poleMat);
     pole.position.set(x, 5, z);

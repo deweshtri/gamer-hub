@@ -32,6 +32,8 @@
   .ctrl-btn { width: 56px; height: 48px; font-size: 1.4rem; border: none; border-radius: 12px; background: rgba(255,255,255,0.18); color: #fff; cursor: pointer; touch-action: none; user-select: none; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
   .ctrl-btn:active { transform: translateY(3px); box-shadow: none; }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="retro.css?v=1" />
 </head>
 <body>
   <div class="topbar">
@@ -105,11 +107,11 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   // ===== Three.js 3D scene =====
   const WORLD_W = 16, WORLD_D = 9;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(0.5);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0c1830);
-  scene.fog = new THREE.Fog(0x0c1830, 16, 30);
+  scene.background = new THREE.Color(0x07020f);
+  scene.fog = new THREE.Fog(0x07020f, 16, 30);
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
   camera.position.set(0, 11.5, 12.5);
@@ -122,24 +124,28 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
   const table = new THREE.Mesh(
     new THREE.PlaneGeometry(WORLD_W, WORLD_D),
-    new THREE.MeshStandardMaterial({ color: 0x16263d, roughness: 0.9 })
+    new THREE.MeshStandardMaterial({ color: 0x0d0620, roughness: 0.9 })
   );
   table.rotation.x = -Math.PI / 2;
   scene.add(table);
+  const grid = new THREE.GridHelper(WORLD_W, 16, 0xff2e63, 0x3a1a5e);
+  grid.scale.z = WORLD_D / WORLD_W;
+  grid.position.y = 0.005;
+  scene.add(grid);
 
   // dashed center line
   const dashCount = 12;
   for (let i = 0; i < dashCount; i++) {
     const dash = new THREE.Mesh(
       new THREE.BoxGeometry(0.07, 0.02, (WORLD_D / dashCount) * 0.5),
-      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
+      new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
     );
     dash.position.set(0, 0.011, -WORLD_D / 2 + (i + 0.5) * (WORLD_D / dashCount));
     scene.add(dash);
   }
 
   // boundary walls (top/bottom)
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a3f5f });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xff2e63, emissive: 0xff2e63, emissiveIntensity: 0.7 });
   [-1, 1].forEach(sign => {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(WORLD_W, 0.35, 0.18), wallMat);
     wall.position.set(0, 0.175, sign * WORLD_D / 2);
@@ -148,11 +154,11 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
   const p1Mesh = new THREE.Mesh(
     new THREE.BoxGeometry(0.3, 0.55, 1),
-    new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0x4a2e00, emissiveIntensity: 0.5 })
+    new THREE.MeshStandardMaterial({ color: 0xffea00, emissive: 0xffea00, emissiveIntensity: 0.6 })
   );
   const p2Mesh = new THREE.Mesh(
     new THREE.BoxGeometry(0.3, 0.55, 1),
-    new THREE.MeshStandardMaterial({ color: 0x06d6a0, emissive: 0x00352a, emissiveIntensity: 0.5 })
+    new THREE.MeshStandardMaterial({ color: 0x39ff14, emissive: 0x39ff14, emissiveIntensity: 0.6 })
   );
   p1Mesh.position.y = 0.275; p2Mesh.position.y = 0.275;
   scene.add(p1Mesh, p2Mesh);

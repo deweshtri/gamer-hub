@@ -1,0 +1,129 @@
+/* Retro arcade skin for the original games. Load AFTER the page's own <style> so these rules win.
+   Visual only — never hide or move gameplay elements here. */
+:root {
+  --accent: #ffea00;
+  --dark: #0a0614;
+  --r-pink: #ff2e63;
+  --r-cyan: #00e5ff;
+  --r-green: #39ff14;
+  --r-panel: #140b28;
+  --r-line: #3a2a6a;
+  --r-text: #e8e6ff;
+  --pixel: 'Press Start 2P', monospace;
+  --term: 'VT323', monospace;
+}
+html, body {
+  background-color: #0a0614;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, #0a0614 0%, #1a0b2e 100%);
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+  background-attachment: fixed;
+  color: var(--r-text);
+  font-family: var(--term);
+}
+body { font-size: 1.2rem; }
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9000;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px);
+}
+
+/* top bar */
+.topbar h1 { font-family: var(--pixel); font-size: clamp(0.7rem, 2.6vw, 1.15rem); color: var(--accent); letter-spacing: 3px; text-shadow: 0 0 10px var(--accent), 3px 3px 0 #000; line-height: 1.5; }
+.topbar .back-link, #back-link {
+  font-family: var(--pixel); font-size: 0.6rem; color: var(--r-cyan) !important; background: rgba(0, 229, 255, 0.08) !important;
+  border: 2px solid var(--r-cyan); border-radius: 0; box-shadow: 3px 3px 0 #000; padding: 0.7em 0.9em;
+}
+.topbar .back-link:hover, #back-link:hover { background: rgba(0, 229, 255, 0.22) !important; }
+
+/* buttons */
+.btn {
+  font-family: var(--pixel); font-size: clamp(0.6rem, 2vw, 0.85rem); font-weight: normal; letter-spacing: 1px;
+  background: var(--r-pink); color: #fff; border-radius: 0; padding: 1em 1.6em;
+  box-shadow: 0 5px 0 #8a0f30, 0 0 18px rgba(255, 46, 99, 0.45);
+}
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #8a0f30; }
+
+/* overlays and mode cards */
+.overlay { background: rgba(8, 3, 18, 0.93); color: var(--r-text); font-family: var(--term); }
+.overlay h1 { font-family: var(--pixel); font-size: clamp(1.2rem, 5vw, 2.6rem); line-height: 1.45; color: var(--accent); letter-spacing: 3px; text-shadow: 0 0 18px var(--accent), 4px 4px 0 #000; padding: 0 0.3em; }
+.overlay h2 { font-family: var(--pixel); font-size: clamp(0.7rem, 2.6vw, 1.1rem); color: var(--r-cyan); text-shadow: 0 0 10px var(--r-cyan); margin: 0.8em 0; }
+.overlay p { font-size: clamp(1.15rem, 3vw, 1.5rem); }
+.mode-card, .player-card {
+  background: var(--r-panel); border: 3px solid var(--r-line); border-radius: 0; color: var(--r-text);
+  font-family: var(--term); font-size: 1.35rem; box-shadow: 5px 5px 0 #000;
+}
+.mode-card:hover, .player-card:hover { border-color: var(--r-cyan); box-shadow: 5px 5px 0 #000, 0 0 16px rgba(0, 229, 255, 0.5); }
+.mode-card small, .player-card small { font-size: 1rem; color: #a99be0; }
+
+.credit { font-family: var(--pixel); font-size: 0.55rem; color: var(--r-pink); opacity: 0.75; letter-spacing: 1px; text-shadow: none; }
+
+/* shared text rows */
+.stats, .status, .scoreboard, .message, .turn-banner { font-family: var(--term); color: var(--r-text); }
+.stats { font-size: clamp(1.3rem, 4.5vw, 1.8rem); }
+.status, .message, .turn-banner { font-size: clamp(1.3rem, 4.5vw, 1.8rem); color: var(--accent); text-shadow: 0 0 8px rgba(255, 234, 0, 0.5); }
+.scoreboard { font-size: clamp(1.1rem, 3.5vw, 1.4rem); }
+
+/* ---- Sky Jumper ---- */
+#hud { font-family: var(--pixel); font-size: clamp(0.7rem, 2.4vw, 1.05rem); color: var(--accent) !important; text-shadow: 0 0 8px var(--accent), 2px 2px 0 #000 !important; }
+#hint { font-family: var(--term); color: var(--r-text) !important; }
+#game-container canvas { background: linear-gradient(to bottom, #0a0220 0%, #2a0845 45%, #7a1b6a 72%, #ff6f3c 100%) !important; }
+
+/* ---- Tic-Tac-Toe ---- */
+.cell {
+  background: var(--r-panel); border: 3px solid var(--r-line); border-radius: 0; box-shadow: inset 0 0 14px rgba(0, 229, 255, 0.18), 4px 4px 0 #000;
+  font-family: var(--pixel); font-size: min(11vw, 3.4rem); font-weight: normal;
+}
+.cell:not(.disabled):hover { border-color: var(--r-cyan); }
+.cell.x { color: var(--r-pink); text-shadow: 0 0 14px var(--r-pink); }
+.cell.o { color: var(--r-cyan); text-shadow: 0 0 14px var(--r-cyan); }
+.modes button { font-family: var(--pixel); font-size: 0.55rem; font-weight: normal; padding: 0.9em 1.1em; border-radius: 0; background: var(--r-panel); color: var(--r-text); border: 2px solid var(--r-line); }
+.modes button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* ---- Whack-a-Mole ---- */
+.hole { background: #10071e; box-shadow: inset 0 10px 16px #000, 0 0 0 3px var(--r-green), 0 0 14px rgba(57, 255, 20, 0.35); }
+.mole { background: var(--r-pink); border-radius: 40% 40% 12% 12%; box-shadow: inset 0 -6px 0 #8a0f30; }
+.hole.whacked .mole { background: #4a4a5a; box-shadow: none; }
+.field-label { font-family: var(--pixel); font-size: 0.55rem; font-weight: normal; color: var(--r-cyan); }
+
+/* ---- Memory Match ---- */
+.card {
+  position: relative; border-radius: 0; border: 3px solid var(--r-cyan);
+  background: repeating-linear-gradient(45deg, #24104a 0 8px, #1a0b36 8px 16px); box-shadow: 4px 4px 0 #000, inset 0 0 12px rgba(0, 229, 255, 0.3);
+}
+.card:not(.flipped):not(.matched)::after { content: '?'; font-family: var(--pixel); font-size: min(6vw, 1.6rem); color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+.card.flipped, .card.matched { background: var(--r-panel); border-color: var(--accent); }
+.card.p1-match { outline: 3px solid var(--r-pink); }
+.card.p2-match { outline: 3px solid var(--r-cyan); }
+.p1-turn { color: var(--r-pink) !important; text-shadow: 0 0 8px var(--r-pink); }
+.p2-turn { color: var(--r-cyan) !important; text-shadow: 0 0 8px var(--r-cyan); }
+
+/* ---- Pong ---- */
+.ctrl-btn { border-radius: 0; background: var(--r-panel); border: 2px solid var(--r-cyan); color: var(--r-cyan); box-shadow: 4px 4px 0 #000; }
+.ctrl-label { font-family: var(--pixel); font-size: 0.5rem; font-weight: normal; color: var(--r-text); }
+#p1-label, #p2-label { font-family: var(--pixel); font-size: 0.45em; margin-bottom: 0.4em; }
+#p1-label { color: var(--accent); }
+#p2-label { color: var(--r-green); }
+#player-score, #ai-score { font-family: var(--pixel); font-size: 0.8em; text-shadow: 0 0 10px currentColor; }
+
+/* ---- Rock Paper Scissors ---- */
+#arena-wrap { border-radius: 0; border: 3px solid var(--r-pink); box-shadow: 0 0 24px rgba(255, 46, 99, 0.45), 6px 6px 0 #000; }
+.arena-label { font-family: var(--pixel); font-size: 0.5rem; font-weight: normal; border-radius: 0; background: rgba(0, 0, 0, 0.7); border: 2px solid var(--r-cyan); color: var(--r-cyan); }
+.arena-vs { font-family: var(--pixel); font-size: 1rem; color: var(--accent); text-shadow: 0 0 12px var(--accent), 3px 3px 0 #000; }
+.choice-btn { background: var(--r-panel); border: 3px solid var(--r-cyan); border-radius: 0; color: var(--r-text); box-shadow: 0 5px 0 #000, 0 0 12px rgba(0, 229, 255, 0.3); }
+.choice-btn:hover:not(:disabled) { border-color: var(--accent); }
+.choice-btn small { font-family: var(--pixel); font-size: 0.5rem; font-weight: normal; color: var(--r-cyan); margin-top: 0.4em; }
+.message.msg-p1 { color: var(--r-pink); text-shadow: 0 0 8px var(--r-pink); }
+.message.msg-p2 { color: var(--r-cyan); text-shadow: 0 0 8px var(--r-cyan); }
+
+/* ---- Penalty Shootout ---- */
+.aim-label { font-family: var(--pixel); font-size: 0.5rem; font-weight: normal; color: var(--r-cyan); opacity: 1; margin-bottom: 8px; }
+.aim-grid button { border-radius: 0; background: var(--r-panel); color: var(--r-cyan); border: 2px solid var(--r-cyan); box-shadow: 3px 3px 0 #000; }
+.aim-grid.confused button { background: rgba(255, 46, 99, 0.3); border-color: var(--r-pink); color: var(--r-pink); }
+.confuse-btn { font-family: var(--pixel); font-size: 0.5rem; font-weight: normal; border-radius: 0; background: var(--r-pink); padding: 0.9em 1.1em; box-shadow: 0 4px 0 #8a0f30; }
+.player-card .jersey { border-radius: 0; box-shadow: 4px 4px 0 #000; font-family: var(--pixel); font-size: 1.1rem; }
+#waiting-badge { font-family: var(--pixel); font-size: 0.5rem; border-radius: 0; background: var(--accent); color: #000; box-shadow: 3px 3px 0 #000; }
+
+/* 3D games render at low resolution; keep the pixels crisp */
+.game-wrap canvas, #arena-wrap canvas { image-rendering: pixelated; border-radius: 0 !important; box-shadow: 0 0 22px rgba(0, 229, 255, 0.3), 6px 6px 0 #000; }

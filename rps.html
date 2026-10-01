@@ -43,6 +43,8 @@
   .mode-card:hover { border-color: var(--accent); }
   .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="retro.css?v=1" />
 </head>
 <body>
   <div class="topbar">
@@ -105,7 +107,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
   // ── Renderer ──
   const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(0.5);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -118,7 +120,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     const c = document.createElement('canvas'); c.width = 512; c.height = 256;
     const ctx = c.getContext('2d');
     const g = ctx.createRadialGradient(256, 128, 10, 256, 128, 270);
-    g.addColorStop(0, '#1c3a58'); g.addColorStop(1, '#050c16');
+    g.addColorStop(0, '#3a0f5a'); g.addColorStop(1, '#07020f');
     ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 256);
     scene.background = new THREE.CanvasTexture(c);
   })();
@@ -126,12 +128,15 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   // Reflective floor
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(20, 14),
-    new THREE.MeshStandardMaterial({ color: 0x0b1a2e, roughness: 0.6, metalness: 0.3 })
+    new THREE.MeshStandardMaterial({ color: 0x120a24, roughness: 0.6, metalness: 0.3 })
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -2.3;
   floor.receiveShadow = true;
   scene.add(floor);
+  const floorGrid = new THREE.GridHelper(20, 20, 0xff2e63, 0x3a1a5e);
+  floorGrid.position.y = -2.29;
+  scene.add(floorGrid);
 
   const camera = new THREE.PerspectiveCamera(44, 2, 0.1, 40);
   camera.position.set(0, 1.1, 9.2);
@@ -149,12 +154,12 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   scene.add(spot);
 
   // Cool blue fill from left
-  const fillL = new THREE.DirectionalLight(0x4070d0, 0.55);
+  const fillL = new THREE.DirectionalLight(0x00e5ff, 0.7);
   fillL.position.set(-7, 3, 2);
   scene.add(fillL);
 
   // Warm orange rim from behind
-  const rim = new THREE.DirectionalLight(0xff6020, 0.4);
+  const rim = new THREE.DirectionalLight(0xff2e63, 0.7);
   rim.position.set(2, -2, -6);
   scene.add(rim);
 

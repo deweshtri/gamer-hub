@@ -29,6 +29,8 @@
   .mode-card:hover { border-color: var(--accent); }
   .mode-card .ico { font-size: 2rem; margin-bottom: 0.3em; }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="retro.css?v=1" />
 </head>
 <body>
 <div id="game-container">
@@ -185,7 +187,7 @@
     else if (pl.y < 0) { pl.y = 0; pl.vy = 0; }
   }
 
-  const OBSTACLE_COLORS = ['#ef476f','#06d6a0','#118ab2','#ffd166'];
+  const OBSTACLE_COLORS = ['#ff2e63','#39ff14','#00e5ff','#ffea00'];
 
   function spawnGroundObstacle() {
     const w = height * (0.045 + Math.random() * 0.035);
@@ -243,23 +245,43 @@
 
   function draw() {
     ctx.clearRect(0, 0, width, height);
-    // sun
-    ctx.fillStyle = '#fff6c8';
-    ctx.beginPath(); ctx.arc(width * 0.85, height * 0.18, Math.min(width, height) * 0.08, 0, Math.PI * 2); ctx.fill();
-    // clouds
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    // retro striped sun
+    const sr = Math.min(width, height) * 0.12, sx = width * 0.8, sy = height * 0.3;
+    const sg = ctx.createLinearGradient(0, sy - sr, 0, sy + sr);
+    sg.addColorStop(0, '#ffe066'); sg.addColorStop(1, '#ff2e63');
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#3a0a50';
+    for (let i = 0; i < 6; i++) ctx.fillRect(sx - sr, sy + sr * 0.1 + i * sr * 0.16, sr * 2, sr * (0.03 + i * 0.012));
+    // pixel clouds
+    ctx.fillStyle = 'rgba(180,120,255,0.35)';
     clouds.forEach(c => {
-      ctx.beginPath();
-      ctx.arc(c.x, c.y, c.size * 0.5, 0, Math.PI * 2);
-      ctx.arc(c.x + c.size * 0.4, c.y + c.size * 0.1, c.size * 0.35, 0, Math.PI * 2);
-      ctx.arc(c.x - c.size * 0.4, c.y + c.size * 0.1, c.size * 0.35, 0, Math.PI * 2);
-      ctx.fill();
+      const u = Math.max(4, Math.round(c.size / 6));
+      const cx = Math.round(c.x / u) * u, cy = Math.round(c.y / u) * u;
+      ctx.fillRect(cx - u * 4, cy, u * 8, u * 2);
+      ctx.fillRect(cx - u * 2, cy - u * 2, u * 4, u * 2);
     });
-    // ground
-    ctx.fillStyle = '#7cb518'; ctx.fillRect(0, groundY + (p1 ? p1.size : 0), width, height);
-    ctx.fillStyle = '#5a8a12'; ctx.fillRect(0, groundY + (p1 ? p1.size : 0), width, height * 0.02);
-    // obstacles
-    obstacles.forEach(o => { ctx.fillStyle = o.color; roundRect(ctx, o.x, o.y, o.w, o.h, Math.min(o.w, o.h) * 0.15); ctx.fill(); });
+    // neon grid ground
+    const gy = groundY + (p1 ? p1.size : 0);
+    ctx.fillStyle = '#12051f'; ctx.fillRect(0, gy, width, height - gy);
+    ctx.strokeStyle = 'rgba(255,46,99,0.55)'; ctx.lineWidth = 2;
+    const gs = height * 0.06, off = (score * 6) % gs;
+    for (let x = -off; x < width; x += gs) { ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, height); ctx.stroke(); }
+    for (let y = gy + gs * 0.5; y < height; y += gs * 0.5) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+    ctx.save(); ctx.shadowColor = '#ff2e63'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ff2e63'; ctx.fillRect(0, gy, width, 3);
+    ctx.restore();
+    // neon obstacles
+    obstacles.forEach(o => {
+      ctx.save();
+      ctx.fillStyle = 'rgba(10,2,32,0.85)'; ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.shadowColor = o.color; ctx.shadowBlur = 16;
+      ctx.strokeStyle = o.color; ctx.lineWidth = 3; ctx.strokeRect(o.x + 1.5, o.y + 1.5, o.w - 3, o.h - 3);
+      ctx.restore();
+      ctx.fillStyle = o.color; ctx.globalAlpha = 0.25;
+      ctx.fillRect(o.x + 6, o.y + 6, o.w - 12, o.h - 12);
+      ctx.globalAlpha = 1;
+    });
     // birds
     if (p1Alive) drawBird(p1);
     if (p2 && p2Alive) drawBird(p2);
@@ -267,8 +289,8 @@
     hud.textContent = mode === '2p' ? 'Score: ' + Math.floor(score) : 'Score: ' + Math.floor(score);
     // 2P labels
     if (mode === '2p') {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.font = 'bold ' + (height * 0.025) + 'px sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.font = Math.round(height * 0.018) + 'px "Press Start 2P", monospace';
       ctx.textAlign = 'left';
       if (p1Alive) ctx.fillText('P1', p1.x, p1.y - 6);
       if (p2Alive) ctx.fillText('P2', p2.x, p2.y - 6);
@@ -276,16 +298,14 @@
   }
 
   function drawBird(pl) {
-    ctx.fillStyle = pl.color;
-    roundRect(ctx, pl.x, pl.y, pl.size, pl.size, pl.size * 0.2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(pl.x + pl.size * 0.7, pl.y + pl.size * 0.3, pl.size * 0.12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#0d1b2a';
-    ctx.beginPath(); ctx.arc(pl.x + pl.size * 0.74, pl.y + pl.size * 0.3, pl.size * 0.06, 0, Math.PI * 2); ctx.fill();
-  }
-
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    const s = pl.size, u = s / 8;
+    ctx.save(); ctx.shadowColor = pl.color; ctx.shadowBlur = 14;
+    ctx.fillStyle = pl.color; ctx.fillRect(pl.x, pl.y, s, s);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(pl.x + u, pl.y + u * 4, u * 3, u * 2);
+    ctx.fillStyle = '#fff'; ctx.fillRect(pl.x + u * 5, pl.y + u * 1.5, u * 2, u * 2);
+    ctx.fillStyle = '#0a0614'; ctx.fillRect(pl.x + u * 6, pl.y + u * 2, u, u);
+    ctx.fillStyle = '#ffea00'; ctx.fillRect(pl.x + s, pl.y + u * 4, u * 2, u * 1.5);
   }
 
   function loop(now) {
