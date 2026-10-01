@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"/>
 <title>Gamer Hub - Cyber Heist</title>
-<meta name="description" content="Cyber Heist - hack into secure systems with code-breaking, logic gates, circuits and timed bypass puzzles before you get traced. Made by Atharv Tripathi."/>
+<meta name="description" content="Cyber Heist - hack into secure systems by typing Python code, solving riddles, cracking passcodes and beating timed locks before you get traced. Made by Atharv Tripathi."/>
 <link rel="stylesheet" href="style.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet"/>
 <style>
@@ -77,7 +77,7 @@ body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:
 
 <div class="overlay" id="menu">
   <h1>⌨ CYBER<br/>HEIST</h1>
-  <p class="sub">Break into 5 secure systems. Each one is a chain of hacks: code-breaking, circuits, logic gates, memory and timing. The TRACE meter rises every second and with every mistake — hit 100% and you're caught.</p>
+  <p class="sub">Break into 5 secure systems. Type Python hacker code, solve riddles, predict what code prints, crack passcodes and beat memory and timing locks. The TRACE meter rises every second and with every mistake — hit 100% and you're caught.</p>
   <div class="big-stat" id="m-loot"></div>
   <div class="targets" id="targets"></div>
 </div>
@@ -108,11 +108,11 @@ const h = (tag, attrs = {}, ...kids) => {
 const SAVE_KEY = 'gamerhub_cyberheist';
 
 const TARGETS = [
-  { name: 'PIXEL SAVINGS ATM', lvl: 1, time: 150, loot: 5000, stages: ['codebreak', 'circuit', 'bypass'] },
-  { name: 'NEON MEDICAL DB', lvl: 1, time: 190, loot: 12000, stages: ['sequence', 'breach', 'logic', 'codebreak'] },
-  { name: 'ORBITAL TELECOM', lvl: 2, time: 200, loot: 30000, stages: ['circuit', 'breach', 'bypass', 'logic'] },
-  { name: 'HELIX CORP MAINFRAME', lvl: 2, time: 250, loot: 75000, stages: ['codebreak', 'sequence', 'circuit', 'breach', 'logic'] },
-  { name: 'ZERO VAULT', lvl: 3, time: 300, loot: 250000, stages: ['breach', 'logic', 'circuit', 'codebreak', 'sequence', 'bypass'] },
+  { name: 'PIXEL SAVINGS ATM', lvl: 1, time: 150, loot: 5000, stages: ['typehack', 'riddle', 'bypass'] },
+  { name: 'NEON MEDICAL DB', lvl: 1, time: 190, loot: 12000, stages: ['pyquiz', 'typehack', 'sequence', 'riddle'] },
+  { name: 'ORBITAL TELECOM', lvl: 2, time: 210, loot: 30000, stages: ['riddle', 'codebreak', 'typehack', 'pyquiz'] },
+  { name: 'HELIX CORP MAINFRAME', lvl: 2, time: 260, loot: 75000, stages: ['typehack', 'pyquiz', 'sequence', 'riddle', 'bypass'] },
+  { name: 'ZERO VAULT', lvl: 3, time: 320, loot: 250000, stages: ['riddle', 'typehack', 'codebreak', 'pyquiz', 'sequence', 'typehack'] },
 ];
 
 const PUZ = {};
@@ -281,7 +281,7 @@ PUZ.codebreak = {
   title: 'PASSCODE CRACK',
   desc: 'Guess the access code. ● = right digit, right slot. ○ = right digit, wrong slot. Digits can repeat.',
   mount(el, lvl, A) {
-    const L = lvl >= 3 ? 5 : 4, S = lvl === 2 ? 7 : 6, MAX = lvl >= 3 ? 12 : 10;
+    const L = lvl === 1 ? 3 : 4, S = 6, MAX = lvl === 1 ? 8 : 10;
     let secret, guesses, cur = [];
     const hist = h('div', { style: { display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '1.3em', minHeight: '40px' } });
     const slots = h('div', { class: 'row', style: { fontSize: '2em', letterSpacing: '6px' } });
@@ -324,237 +324,180 @@ PUZ.codebreak = {
   },
 };
 
-// ---------- PUZZLE: circuit routing ----------
-const DIRS = [[-1, 0, 1, 4], [0, 1, 2, 8], [1, 0, 4, 1], [0, -1, 8, 2]];
-const rotCW = m => ((m << 1) | (m >> 3)) & 15;
-PUZ.circuit = {
-  title: 'POWER REROUTE',
-  desc: 'Rotate the circuit tiles (click) to carry power from the source ◀ to the server ▶.',
-  mount(el, lvl, A) {
-    const n = 4 + lvl;
-    const sr = rint(n), er = rint(n);
-    let path = null;
-    const seen = new Set();
-    const dfs = (r, c, acc) => {
-      if (r === er && c === n - 1) { path = acc.slice(); return true; }
-      for (const [dr, dc] of shuffle(DIRS.map(d => d.slice(0, 2)))) {
-        const nr = r + dr, nc = c + dc, k = nr * n + nc;
-        if (nr < 0 || nc < 0 || nr >= n || nc >= n || seen.has(k)) continue;
-        seen.add(k); acc.push([nr, nc]);
-        if (dfs(nr, nc, acc)) return true;
-        acc.pop();
-      }
-      return false;
-    };
-    seen.add(sr * n); dfs(sr, 0, [[sr, 0]]);
-    const grid = Array.from({ length: n }, () => Array(n).fill(0));
-    const bit = (a, b) => DIRS.find(d => a[0] + d[0] === b[0] && a[1] + d[1] === b[1])[2];
-    path.forEach((p, i) => {
-      let m = 0;
-      m |= i === 0 ? 8 : bit(p, path[i - 1]);
-      m |= i === path.length - 1 ? 2 : bit(p, path[i + 1]);
-      grid[p[0]][p[1]] = m;
-    });
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (!grid[r][c]) grid[r][c] = pick([5, 3, 7, 5, 3]);
-    const powered = () => {
-      const on = new Set();
-      if (!(grid[sr][0] & 8)) return on;
-      const q = [[sr, 0]]; on.add(sr * n);
-      while (q.length) {
-        const [r, c] = q.shift();
-        for (const [dr, dc, b, ob] of DIRS) {
-          const nr = r + dr, nc = c + dc;
-          if (!(grid[r][c] & b) || nr < 0 || nc < 0 || nr >= n || nc >= n || on.has(nr * n + nc) || !(grid[nr][nc] & ob)) continue;
-          on.add(nr * n + nc); q.push([nr, nc]);
-        }
-      }
-      return on;
-    };
-    const solved = on => on.has(er * n + n - 1) && (grid[er][n - 1] & 2);
-    do { for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) for (let k = rint(4); k > 0; k--) grid[r][c] = rotCW(grid[r][c]); } while (solved(powered()));
-
-    const size = Math.min(52, Math.floor((Math.min(window.innerWidth, 820) - 80) / (n + 2)));
-    const board = h('div', { style: { display: 'grid', gridTemplateColumns: `repeat(${n + 2}, ${size}px)`, gap: '2px' } });
-    const cells = [];
-    const svgFor = (m, on) => {
-      const col = on ? '#33ff66' : '#1d6b35', w = on ? 7 : 6;
-      let s = `<svg viewBox="0 0 40 40" width="${size}" height="${size}"><rect x="0" y="0" width="40" height="40" fill="${on ? '#062a12' : '#010a04'}" stroke="#0f5c26"/>`;
-      const ends = { 1: [20, 0], 2: [40, 20], 4: [20, 40], 8: [0, 20] };
-      for (const b of [1, 2, 4, 8]) if (m & b) s += `<line x1="20" y1="20" x2="${ends[b][0]}" y2="${ends[b][1]}" stroke="${col}" stroke-width="${w}" stroke-linecap="square"/>`;
-      s += `<rect x="15" y="15" width="10" height="10" fill="${col}"/></svg>`;
-      return s;
-    };
-    const render = () => {
-      const on = powered();
-      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) cells[r][c].innerHTML = svgFor(grid[r][c], on.has(r * n + c));
-      return on;
-    };
-    for (let r = 0; r < n; r++) {
-      cells.push([]);
-      board.append(h('div', { style: { color: 'var(--g)', textAlign: 'right', alignSelf: 'center', fontSize: '1.6em' } }, r === sr ? '⚡◀' : ''));
-      for (let c = 0; c < n; c++) {
-        const cell = h('div', { style: { cursor: 'pointer', lineHeight: 0 } });
-        cell.addEventListener('click', () => {
-          if (!A.active()) return;
-          grid[r][c] = rotCW(grid[r][c]);
-          if (solved(render())) A.solve();
-        });
-        cells[r].push(cell); board.append(cell);
-      }
-      board.append(h('div', { style: { color: 'var(--cyan)', alignSelf: 'center', fontSize: '1.6em' } }, r === er ? '▶▣' : ''));
-    }
-    el.append(board);
-    render();
-  },
+// ---------- content banks ----------
+const TYPE_LINES = {
+  1: ['print("hello hacker")', 'import vault', 'password = "1234"', 'hack()', 'open_door()', 'x = 5 + 5', 'print("access granted")',
+      'alarm = False', 'import secrets', 'guard.sleep()', 'coins = 100', 'print("ninja mode on")'],
+  2: ['for i in range(3):', 'if guard == "asleep":', 'vault.unlock(code=42)', 'firewall.disable()', 'while alarm: wait()',
+      'camera.turn_off()', 'door = Door("back")', 'laser_grid.power = 0', 'print("I am in!")', 'keys = ["red", "blue"]'],
+  3: ['def crack(pin): return pin[::-1]', 'loot = [gold * 2 for gold in vault]', 'if not alarm and door.is_open(): run()',
+      'data = {"user": "admin", "pass": "ghost"}', 'print(f"stolen: {amount} coins")', 'for cam in cameras: cam.loop_video()',
+      'while vault.locked: vault.try_pin(guess())', 'escape_route = sorted(exits, key=len)[0]'],
 };
 
-// ---------- PUZZLE: breach matrix ----------
-const HEX = ['1C', '55', 'BD', 'E9', '7A', 'FF'];
-PUZ.breach = {
-  title: 'BREACH PROTOCOL',
-  desc: 'Build the target sequence in your buffer. Start in the TOP ROW, then alternate: column of your last pick, row of your last pick... Each cell once.',
+const PY_QUIZ = [
+  { lvl: 1, code: 'print(2 + 3)', a: '5', w: ['23', '2 + 3', 'Error'] },
+  { lvl: 1, code: 'print("ha" * 3)', a: 'hahaha', w: ['ha3', 'ha ha ha', 'Error'] },
+  { lvl: 1, code: 'print(len("hack"))', a: '4', w: ['3', '5', 'hack'] },
+  { lvl: 1, code: 'x = 5\nx = x + 1\nprint(x)', a: '6', w: ['5', 'x + 1', '51'] },
+  { lvl: 1, code: 'print("cyber" + "heist")', a: 'cyberheist', w: ['cyber heist', 'cyber+heist', 'Error'] },
+  { lvl: 1, code: 'print(3 > 2)', a: 'True', w: ['False', '3', '1'] },
+  { lvl: 1, code: 'print(2 ** 3)', a: '8', w: ['6', '5', '23'] },
+  { lvl: 1, code: 'name = "bot"\nprint("hi " + name)', a: 'hi bot', w: ['hi name', 'hibot', 'name'] },
+  { lvl: 1, code: 'print(max(4, 9, 2))', a: '9', w: ['4', '2', '15'] },
+  { lvl: 1, code: 'print("abc".upper())', a: 'ABC', w: ['abc', 'Abc', 'upper'] },
+  { lvl: 2, code: 'print([1, 2, 3][0])', a: '1', w: ['0', '2', '[1]'] },
+  { lvl: 2, code: 'for i in range(3):\n    print(i)', a: '0 1 2', w: ['1 2 3', '0 1 2 3', '3'] },
+  { lvl: 2, code: 'print(10 // 3)', a: '3', w: ['3.33', '1', '30'] },
+  { lvl: 2, code: 'print(7 % 2)', a: '1', w: ['3', '3.5', '0'] },
+  { lvl: 2, code: 'print("hello"[1])', a: 'e', w: ['h', 'l', 'he'] },
+  { lvl: 2, code: 'print("a" in "cat")', a: 'True', w: ['False', 'a', '1'] },
+  { lvl: 2, code: 'coins = [5, 10]\ncoins.append(20)\nprint(len(coins))', a: '3', w: ['2', '20', '35'] },
+  { lvl: 2, code: 'print(int("7") + 1)', a: '8', w: ['71', '"8"', 'Error'] },
+  { lvl: 3, code: 'print("vault"[::-1])', a: 'tluav', w: ['vault', 'v', 'tluv'] },
+  { lvl: 3, code: 'print(sum([1, 2, 3, 4]))', a: '10', w: ['4', '1234', '24'] },
+  { lvl: 3, code: 'x = [1, 2, 3]\nprint(x[-1])', a: '3', w: ['1', '-1', 'Error'] },
+  { lvl: 3, code: 'print(bool(0))', a: 'False', w: ['True', '0', 'None'] },
+  { lvl: 3, code: 'print("-".join(["a", "b", "c"]))', a: 'a-b-c', w: ['abc', '-abc-', 'a b c'] },
+  { lvl: 3, code: 'print(round(4.6))', a: '5', w: ['4', '4.6', '5.0'] },
+];
+
+const RIDDLES = [
+  { q: 'What has keys but can\'t open locks?', a: 'A keyboard', w: ['A door', 'A safe', 'A car'] },
+  { q: 'What has to be broken before you can use it?', a: 'An egg', w: ['A window', 'A rule', 'A pencil'] },
+  { q: 'I\'m tall when I\'m young and short when I\'m old. What am I?', a: 'A candle', w: ['A tree', 'A person', 'A pencil'] },
+  { q: 'What has hands but can\'t clap?', a: 'A clock', w: ['A robot', 'A glove', 'A statue'] },
+  { q: 'What gets wetter the more it dries?', a: 'A towel', w: ['A sponge', 'Rain', 'A fish'] },
+  { q: 'What has a head and a tail but no body?', a: 'A coin', w: ['A snake', 'A comet', 'A ghost'] },
+  { q: 'What can you catch but not throw?', a: 'A cold', w: ['A ball', 'A fish', 'A bus'] },
+  { q: 'What has many teeth but can\'t bite?', a: 'A comb', w: ['A shark', 'A zipper', 'A saw'] },
+  { q: 'What goes up but never comes down?', a: 'Your age', w: ['A balloon', 'A rocket', 'Smoke'] },
+  { q: 'The more you take, the more you leave behind. What are they?', a: 'Footsteps', w: ['Photos', 'Cookies', 'Coins'] },
+  { q: 'What has one eye but can\'t see?', a: 'A needle', w: ['A pirate', 'A camera', 'A storm'] },
+  { q: 'What runs but never walks?', a: 'A river', w: ['A turtle', 'A clock', 'A road'] },
+  { q: 'What has words but never speaks?', a: 'A book', w: ['A parrot', 'A radio', 'A phone'] },
+  { q: 'What travels around the world but stays in a corner?', a: 'A stamp', w: ['A plane', 'The moon', 'A spider'] },
+  { q: 'What has a neck but no head?', a: 'A bottle', w: ['A giraffe', 'A shirt', 'A guitar'] },
+  { q: 'Which month has 28 days?', a: 'All of them', w: ['February', 'None', 'June'] },
+  { q: 'What belongs to you, but other people use it more?', a: 'Your name', w: ['Your phone', 'Your bike', 'Your money'] },
+  { q: 'I have a mouse but no cheese, a screen but no TV show. What am I?', a: 'A computer', w: ['A cat', 'A cinema', 'A trap'] },
+  { q: 'I guard your computer and I\'m named after something hot. What am I?', a: 'A firewall', w: ['A heater', 'A dragon', 'A volcano'] },
+  { q: 'I\'m a secret word that opens your account. What am I?', a: 'A password', w: ['A username', 'A key', 'An email'] },
+  { q: 'What has a bed but never sleeps?', a: 'A river', w: ['A hotel', 'A cat', 'A baby'] },
+  { q: 'What can fill a room but takes up no space?', a: 'Light', w: ['Water', 'Air', 'Boxes'] },
+  { q: 'What is full of holes but still holds water?', a: 'A sponge', w: ['A bucket', 'A net', 'A cup'] },
+  { q: 'What question can you never answer "yes" to?', a: 'Are you asleep?', w: ['Are you hungry?', 'Are you a hacker?', 'Is it raining?'] },
+];
+
+const usedBank = new Set();
+function drawFrom(list, n, keyOf) {
+  let pool = list.filter(x => !usedBank.has(keyOf(x)));
+  if (pool.length < n) { list.forEach(x => usedBank.delete(keyOf(x))); pool = list.slice(); }
+  const out = shuffle(pool.slice()).slice(0, n);
+  out.forEach(x => usedBank.add(keyOf(x)));
+  return out;
+}
+
+// ---------- PUZZLE: type hack ----------
+PUZ.typehack = {
+  title: 'TYPE HACK',
+  desc: 'Type each line of hacker code EXACTLY as shown (spaces and symbols too). Fast fingers = less trace!',
   mount(el, lvl, A) {
-    const n = lvl >= 2 ? 6 : 5, B = lvl >= 3 ? 7 : 6, SL = lvl === 1 ? 3 : lvl === 2 ? 4 : 5;
-    let M, target, buf, used, axis, line;
-    const gen = () => {
-      M = Array.from({ length: n }, () => Array.from({ length: n }, () => pick(HEX)));
-      const u = new Set();
-      let ax = 'row', ln = 0;
-      const picks = [];
-      const pre = rint(Math.min(3, B - SL + 1));
-      for (let k = 0; k < pre + SL; k++) {
-        const opts = [];
-        for (let j = 0; j < n; j++) { const [r, c] = ax === 'row' ? [ln, j] : [j, ln]; if (!u.has(r * n + c)) opts.push([r, c]); }
-        const [r, c] = pick(opts);
-        u.add(r * n + c); picks.push(M[r][c]);
-        if (ax === 'row') { ax = 'col'; ln = c; } else { ax = 'row'; ln = r; }
-      }
-      target = picks.slice(pre);
-      buf = []; used = new Set(); axis = 'row'; line = 0;
-    };
-    const matchLen = () => {
-      for (let k = Math.min(buf.length, target.length); k > 0; k--)
-        if (buf.slice(buf.length - k).join() === target.slice(0, k).join()) return k;
-      return 0;
-    };
-    const solvedNow = () => { for (let i = 0; i + target.length <= buf.length; i++) if (buf.slice(i, i + target.length).join() === target.join()) return true; return false; };
-    const tgtEl = h('div', { class: 'row' }), bufEl = h('div', { class: 'row' });
-    const mat = h('div', { style: { display: 'grid', gridTemplateColumns: `repeat(${n}, 52px)`, gap: '4px' } });
-    const box = (txt, col, bg) => h('span', { style: { display: 'inline-block', minWidth: '44px', padding: '4px 6px', border: '1px solid ' + col, color: col, background: bg || 'transparent', textAlign: 'center', fontSize: '1.2em' } }, txt);
+    const lines = drawFrom(TYPE_LINES[lvl], 2 + lvl, x => 't:' + x);
+    let idx = 0, typos = 0, prevLen = 0;
+    const counter = h('div', { style: { color: 'var(--amber)', fontSize: '1.2em' } });
+    const show = h('div', { style: { fontFamily: 'monospace', fontSize: 'clamp(15px, 3.6vw, 24px)', background: '#000', border: '1px solid var(--gd)', padding: '14px 16px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-all', width: '100%', maxWidth: '700px', boxSizing: 'border-box', minHeight: '64px' } });
+    const input = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'type here...', style: { fontFamily: 'monospace', fontSize: 'clamp(15px, 3.6vw, 22px)', width: '100%', maxWidth: '700px', boxSizing: 'border-box', padding: '10px 12px', background: '#010a04', color: 'var(--g)', border: '2px solid var(--g)', borderRadius: '4px', outline: 'none' } });
+    const done = h('div', { style: { fontFamily: 'monospace', color: '#3f8f57', width: '100%', maxWidth: '700px', fontSize: '15px' } });
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
     const render = () => {
-      const ml = matchLen();
-      tgtEl.innerHTML = ''; bufEl.innerHTML = '';
-      tgtEl.append(h('span', { style: { color: '#8fdca6' } }, 'TARGET '));
-      target.forEach((t, i) => tgtEl.append(box(t, i < ml ? '#000' : 'var(--cyan)', i < ml ? 'var(--cyan)' : '')));
-      bufEl.append(h('span', { style: { color: '#8fdca6' } }, 'BUFFER '));
-      for (let i = 0; i < B; i++) bufEl.append(box(buf[i] || '··', buf[i] ? 'var(--g)' : 'var(--gd)'));
-      mat.innerHTML = '';
-      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-        const active = axis === 'row' ? r === line : c === line, u = used.has(r * n + c);
-        const cell = h('button', { class: 'k', style: { minWidth: '0', padding: '8px 0', background: u ? '#000' : active ? '#0f5c26' : 'var(--gdd)', color: u ? '#1d4d2a' : active ? '#eaffef' : '#3fae63', borderColor: active ? 'var(--g)' : 'var(--gd)' } }, u ? '[]' : M[r][c]);
-        cell.disabled = !active || u;
-        cell.addEventListener('click', () => choose(r, c));
-        mat.append(cell);
+      const line = lines[idx], typed = input.value;
+      let html = '';
+      for (let i = 0; i < line.length; i++) {
+        const ch = esc(line[i]);
+        if (i < typed.length) html += typed[i] === line[i] ? `<span style="color:#33ff66">${ch}</span>` : `<span style="color:#000;background:#ff3355">${ch}</span>`;
+        else if (i === typed.length) html += `<span style="color:#000;background:#33e0ff">${ch}</span>`;
+        else html += `<span style="color:#2f7a46">${ch}</span>`;
       }
+      if (typed.length > line.length) html += `<span style="background:#ff3355;color:#000">${esc(typed.slice(line.length))}</span>`;
+      show.innerHTML = '<span style="color:#ffcc00">&gt;&gt;&gt;&nbsp;</span>' + html;
+      counter.textContent = `LINE ${idx + 1}/${lines.length} · TYPOS: ${typos}`;
     };
-    const choose = (r, c) => {
+    input.addEventListener('input', () => {
       if (!A.active()) return;
-      used.add(r * n + c); buf.push(M[r][c]);
-      if (axis === 'row') { axis = 'col'; line = c; } else { axis = 'row'; line = r; }
-      render();
-      if (solvedNow()) { A.solve(); return; }
-      let anyLeft = false;
-      for (let j = 0; j < n; j++) { const [rr, cc] = axis === 'row' ? [line, j] : [j, line]; if (!used.has(rr * n + cc)) anyLeft = true; }
-      if (buf.length >= B || !anyLeft) {
-        A.penalty(18, 'BUFFER OVERFLOW · INTRUSION DETECTED');
-        A.log('MATRIX REGENERATED.', 'dim');
-        gen(); render();
+      const line = lines[idx], typed = input.value;
+      if (typed.length > prevLen && typed[typed.length - 1] !== line[typed.length - 1]) typos++;
+      prevLen = typed.length;
+      if (typed === line) {
+        done.append(h('div', {}, '>>> ' + line + '   ✔'));
+        idx++; input.value = ''; prevLen = 0;
+        if (idx >= lines.length) { show.innerHTML = '<span style="color:#33e0ff">RUNNING SCRIPT... ✔</span>'; input.disabled = true; A.solve(); return; }
+        A.log('LINE ' + idx + ' EXECUTED', 'dim');
       }
-    };
-    const resetBtn = h('button', { class: 'k', on: { click: () => { if (!A.active() || !buf.length) return; A.penalty(5, 'BUFFER FLUSHED'); buf = []; used = new Set(); axis = 'row'; line = 0; render(); } } }, 'FLUSH BUFFER (+5%)');
-    el.append(tgtEl, bufEl, mat, resetBtn);
-    gen(); render();
+      render();
+    });
+    el.append(counter, show, input, done);
+    render();
+    setTimeout(() => input.focus(), 50);
+    A.onKey(e => { if (document.activeElement !== input && e.key.length === 1) input.focus(); });
   },
 };
 
-// ---------- PUZZLE: logic gates ----------
-const GATES = { AND: (a, b) => a & b, OR: (a, b) => a | b, XOR: (a, b) => a ^ b, NAND: (a, b) => 1 - (a & b), NOR: (a, b) => 1 - (a | b) };
-PUZ.logic = {
-  title: 'FIREWALL LOGIC',
-  desc: 'Flip the input switches so the ACCESS output turns on. You have a limited number of flips — think before you click.',
-  mount(el, lvl, A) {
-    const n = 3 + lvl, g1 = lvl >= 3 ? 4 : 3, L2 = g1 === 4 ? [[0, 1], [2, 3]] : [[0, 1], [1, 2]];
-    let c;
-    const evalAll = (x, cc) => {
-      const v1 = cc.l1.map(g => GATES[g.t](x[g.a], x[g.b]));
-      const v2 = cc.l2.map((g, i) => GATES[g.t](v1[L2[i][0]], v1[L2[i][1]]));
-      return { v1, v2, out: GATES[cc.out](v2[0], v2[1]) };
-    };
-    const types = Object.keys(GATES);
-    for (let tries = 0; tries < 5000; tries++) {
-      const pool = [...Array(n).keys()];
-      while (pool.length < g1 * 2) pool.push(rint(n));
-      shuffle(pool);
-      const l1 = [];
-      let ok = true;
-      for (let i = 0; i < g1; i++) { const a = pool[i * 2], b = pool[i * 2 + 1]; if (a === b) ok = false; l1.push({ t: pick(types), a: Math.min(a, b), b: Math.max(a, b) }); }
-      if (!ok) continue;
-      const cc = { l1, l2: L2.map(() => ({ t: pick(types) })), out: pick(types) };
-      const sat = [];
-      for (let m = 0; m < 1 << n; m++) { const x = [...Array(n)].map((_, i) => (m >> i) & 1); if (evalAll(x, cc).out) sat.push(m); }
-      if (!sat.length || sat.length > (1 << n) * 0.35) continue;
-      const s0 = rint(1 << n);
-      if (sat.includes(s0)) continue;
-      const pop = v => v.toString(2).split('1').length - 1;
-      const minF = Math.min(...sat.map(m => pop(m ^ s0)));
-      if (minF < 2) continue;
-      c = { ...cc, s0, minF };
-      break;
-    }
-    const budget = c.minF + (lvl === 1 ? 3 : 2);
-    let x, flips;
-    const resetInputs = () => { x = [...Array(n)].map((_, i) => (c.s0 >> i) & 1); flips = budget; };
-    const VW = 720, VH = 60 + n * 52;
-    const ys = k => Array.from({ length: k }, (_, i) => (VH / (k + 1)) * (i + 1));
-    const yIn = ys(n), y1 = ys(g1), y2 = ys(2), yOut = VH / 2;
-    const ON = '#33ff66', OFF = '#1d4d2a';
-    const wire = (x1, ya, x2, yb, v) => { const mx = (x1 + x2) / 2; return `<path d="M${x1} ${ya} H${mx} V${yb} H${x2}" fill="none" stroke="${v ? ON : OFF}" stroke-width="${v ? 3 : 2}"/>`; };
-    const gate = (gx, gy, t, v) => `<rect x="${gx}" y="${gy - 24}" width="90" height="48" rx="6" fill="${v ? '#0b3d1a' : '#030f07'}" stroke="${v ? ON : '#2f7a46'}" stroke-width="2"/><text x="${gx + 45}" y="${gy + 7}" fill="${v ? '#eaffef' : '#5fbf7c'}" font-size="20" text-anchor="middle" font-family="VT323">${t}</text>`;
-    const svgWrap = h('div', { style: { width: '100%', maxWidth: '720px' } });
-    const info = h('div', { style: { color: 'var(--amber)', fontSize: '1.2em' } });
-    const render = () => {
-      const { v1, v2, out } = evalAll(x, c);
-      let s = `<svg viewBox="0 0 ${VW} ${VH}" width="100%" style="display:block">`;
-      c.l1.forEach((g, i) => { s += wire(90, yIn[g.a], 200, y1[i] - 10, x[g.a]) + wire(90, yIn[g.b], 200, y1[i] + 10, x[g.b]); });
-      c.l2.forEach((g, i) => { s += wire(290, y1[L2[i][0]], 380, y2[i] - 10, v1[L2[i][0]]) + wire(290, y1[L2[i][1]], 380, y2[i] + 10, v1[L2[i][1]]); });
-      s += wire(470, y2[0], 540, yOut - 10, v2[0]) + wire(470, y2[1], 540, yOut + 10, v2[1]);
-      s += wire(630, yOut, 660, yOut, out);
-      x.forEach((v, i) => {
-        s += `<g data-i="${i}" style="cursor:pointer"><rect x="14" y="${yIn[i] - 18}" width="76" height="36" rx="4" fill="${v ? '#0f5c26' : '#000'}" stroke="${v ? ON : '#2f7a46'}" stroke-width="2"/>` +
-          `<text x="52" y="${yIn[i] + 7}" fill="${v ? '#eaffef' : '#5fbf7c'}" font-size="22" text-anchor="middle" font-family="VT323">IN${i + 1}:${v}</text></g>`;
-      });
-      c.l1.forEach((g, i) => { s += gate(200, y1[i], g.t, v1[i]); });
-      c.l2.forEach((g, i) => { s += gate(380, y2[i], g.t, v2[i]); });
-      s += gate(540, yOut, c.out, out);
-      s += `<circle cx="688" cy="${yOut}" r="22" fill="${out ? ON : '#3a0610'}" stroke="${out ? '#eaffef' : '#ff3355'}" stroke-width="3"/><text x="688" y="${yOut + 46}" fill="${out ? ON : '#ff3355'}" font-size="18" text-anchor="middle" font-family="VT323">ACCESS</text></svg>`;
-      svgWrap.innerHTML = s;
-      info.textContent = 'FLIPS LEFT: ' + flips;
-      return out;
-    };
-    svgWrap.addEventListener('click', e => {
-      const g = e.target.closest('[data-i]');
-      if (!g || !A.active()) return;
-      const i = +g.getAttribute('data-i');
-      x[i] ^= 1; flips--;
-      if (render()) { A.solve(); return; }
-      if (flips <= 0) {
-        A.penalty(15, 'FIREWALL LOCKOUT · INPUTS RESET');
-        resetInputs(); render();
-      }
+// ---------- multiple-choice helper (riddles + python quiz) ----------
+function mountChoices(el, A, items, label, render) {
+  let idx = 0;
+  const counter = h('div', { style: { color: 'var(--amber)', fontSize: '1.2em' } });
+  const qBox = h('div', { style: { width: '100%', maxWidth: '640px' } });
+  const opts = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '8px', width: '100%', maxWidth: '640px' } });
+  let buttons = [];
+  const showQ = () => {
+    const it = items[idx];
+    counter.textContent = `${label} ${idx + 1}/${items.length}`;
+    qBox.innerHTML = '';
+    qBox.append(render(it));
+    opts.innerHTML = '';
+    buttons = shuffle([it.a, ...it.w]).map((txt, i) => {
+      const b = h('button', { class: 'k', style: { textAlign: 'left', padding: '10px 14px', fontSize: '1.25em', whiteSpace: 'pre-wrap' } }, `${i + 1}. ${txt}`);
+      b.addEventListener('click', () => answer(b, txt === it.a));
+      opts.append(b);
+      return b;
     });
-    const rst = h('button', { class: 'k', on: { click: () => { if (!A.active()) return; A.penalty(4, 'MANUAL RESET'); resetInputs(); render(); } } }, 'RESET INPUTS (+4%)');
-    el.append(svgWrap, h('div', { class: 'row' }, info, rst));
-    resetInputs(); render();
+  };
+  const answer = (b, right) => {
+    if (!A.active() || b.disabled) return;
+    if (right) {
+      b.style.background = 'var(--g)'; b.style.color = '#000';
+      buttons.forEach(x => x.disabled = true);
+      idx++;
+      setTimeout(() => { if (!A.active()) return; if (idx >= items.length) A.solve(); else { A.log(label + ' ' + idx + ' CORRECT', 'dim'); showQ(); } }, 450);
+    } else {
+      b.disabled = true; b.style.borderColor = 'var(--warn)'; b.style.color = 'var(--warn)';
+      A.penalty(8, 'WRONG ANSWER');
+    }
+  };
+  A.onKey(e => { const n = +e.key; if (n >= 1 && n <= buttons.length) answer(buttons[n - 1], buttons[n - 1].textContent.slice(3) === items[idx].a); });
+  el.append(counter, qBox, opts);
+  showQ();
+}
+
+// ---------- PUZZLE: riddles ----------
+PUZ.riddle = {
+  title: 'RIDDLE LOCK',
+  desc: 'The vault AI only opens for clever minds. Solve its riddles! (Click or press 1-4.)',
+  mount(el, lvl, A) {
+    mountChoices(el, A, drawFrom(RIDDLES, 2 + lvl, x => 'r:' + x.q), 'RIDDLE',
+      it => h('div', { style: { fontSize: 'clamp(18px, 3.8vw, 26px)', color: '#eaffef', textAlign: 'center', lineHeight: '1.25', padding: '12px', border: '1px dashed var(--gd)', borderRadius: '4px' } }, '🔐 ' + it.q));
+  },
+};
+
+// ---------- PUZZLE: python output quiz ----------
+PUZ.pyquiz = {
+  title: 'PYTHON PREDICT',
+  desc: 'The guard bot runs this Python code. Pick what it PRINTS to sneak past! (Click or press 1-4.)',
+  mount(el, lvl, A) {
+    const pool = PY_QUIZ.filter(q => q.lvl <= lvl && (lvl === 1 || q.lvl >= lvl - 1));
+    mountChoices(el, A, drawFrom(pool, 2 + lvl, x => 'p:' + x.code), 'CODE',
+      it => h('pre', { style: { fontFamily: 'monospace', fontSize: 'clamp(16px, 3.6vw, 24px)', color: '#eaffef', background: '#000', border: '1px solid var(--gd)', padding: '14px 18px', borderRadius: '4px', margin: '0' } }, it.code));
   },
 };
 
