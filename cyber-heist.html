@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"/>
+<title>Gamer Hub - Cyber Heist</title>
+<meta name="description" content="Cyber Heist - hack into secure systems with code-breaking, logic gates, circuits and timed bypass puzzles before you get traced. Made by Atharv Tripathi."/>
+<link rel="stylesheet" href="style.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet"/>
+<style>
+:root { --g:#33ff66; --gd:#0f5c26; --gdd:#06210e; --bg:#020805; --warn:#ff3355; --amber:#ffcc00; --cyan:#33e0ff; }
+body { display:flex; flex-direction:column; min-height:100vh; align-items:center; background:var(--bg); color:var(--g); font-family:'VT323',monospace; font-size:20px; user-select:none; -webkit-user-select:none; }
+body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:50; background:repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 3px); }
+.topbar h1 { font-family:'Press Start 2P',monospace; font-size:clamp(0.7rem,2.5vw,1rem); letter-spacing:3px; color:var(--g); text-shadow:0 0 10px var(--g); }
+.topbar .back-link { font-family:'Press Start 2P',monospace; font-size:0.65rem; background:rgba(51,255,102,0.1); color:var(--g); border:1px solid var(--g); }
+.topbar .back-link:hover { background:rgba(51,255,102,0.25); }
+.credit { color:var(--g); font-family:'Press Start 2P',monospace; font-size:0.6rem; opacity:0.55; letter-spacing:1px; margin:0.6em 0; }
+#app { width:min(820px, calc(100vw - 16px)); display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+#hud { display:flex; gap:10px; align-items:center; flex-wrap:wrap; border:1px solid var(--gd); background:var(--gdd); padding:6px 10px; border-radius:3px; }
+#h-target { color:var(--cyan); font-size:1.1em; }
+#h-stage { color:var(--amber); }
+.trace { flex:1; min-width:180px; display:flex; align-items:center; gap:8px; }
+.tbar { flex:1; height:12px; border:1px solid var(--gd); background:#000; }
+.tbar i { display:block; height:100%; width:0; background:var(--g); transition:background 0.3s; }
+#stage { border:1px solid var(--gd); background:#010503; border-radius:3px; padding:12px; min-height:360px; position:relative; }
+#stage.shake { animation:shake 0.3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+#ptitle { font-family:'Press Start 2P',monospace; font-size:clamp(0.6rem,2vw,0.8rem); color:var(--g); text-shadow:0 0 8px var(--g); margin-bottom:6px; }
+#pdesc { color:#8fdca6; font-size:0.95em; margin-bottom:10px; line-height:1.2; }
+#puzzle { display:flex; flex-direction:column; align-items:center; gap:10px; }
+#term { border:1px solid var(--gd); background:#000; padding:6px 10px; height:132px; overflow:hidden; border-radius:3px; font-size:0.95em; line-height:1.25; }
+#term .warn { color:var(--warn); }
+#term .ok { color:var(--cyan); }
+#term .dim { color:#3f8f57; }
+.k { font-family:'VT323',monospace; font-size:1.2em; background:var(--gdd); color:var(--g); border:1px solid var(--g); border-radius:3px; padding:6px 12px; cursor:pointer; min-width:44px; }
+.k:hover:not(:disabled) { background:var(--gd); }
+.k:disabled { opacity:0.3; cursor:default; }
+.k.big { font-family:'Press Start 2P',monospace; font-size:0.65rem; padding:12px 16px; }
+.row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; align-items:center; }
+.flash { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Press Start 2P',monospace; font-size:clamp(0.9rem,3.5vw,1.5rem); color:var(--g); text-shadow:0 0 18px var(--g); background:rgba(1,8,3,0.88); z-index:5; }
+.overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(1,6,3,0.95); text-align:center; padding:1em; z-index:20; overflow-y:auto; }
+.overlay.hidden { display:none; }
+.overlay h1 { font-family:'Press Start 2P',monospace; font-size:clamp(1.1rem,4.5vw,2rem); margin:0 0 0.4em; color:var(--g); text-shadow:0 0 18px var(--g); line-height:1.4; }
+.overlay .sub { color:#8fdca6; margin-bottom:0.8em; max-width:600px; line-height:1.2; }
+.targets { display:flex; flex-direction:column; gap:8px; width:min(560px,100%); margin-bottom:0.8em; }
+.tcard { display:flex; justify-content:space-between; align-items:center; gap:8px; font-family:'VT323',monospace; font-size:1.15em; text-align:left; background:var(--gdd); color:var(--g); border:1px solid var(--gd); border-radius:3px; padding:8px 12px; cursor:pointer; }
+.tcard:hover:not(:disabled) { border-color:var(--g); box-shadow:0 0 12px rgba(51,255,102,0.4); }
+.tcard:disabled { opacity:0.35; cursor:default; }
+.tcard .lv { color:var(--amber); font-size:0.85em; }
+.tcard .st { color:var(--amber); white-space:nowrap; }
+.btn { font-family:'Press Start 2P',monospace; font-size:0.65rem; background:var(--g); color:#000; border:none; border-radius:2px; padding:0.9em 1.5em; cursor:pointer; box-shadow:0 4px 0 var(--gd); margin:0.4em; }
+.stars { font-size:2rem; color:var(--amber); letter-spacing:6px; }
+.big-stat { font-size:1.4em; color:var(--amber); margin:0.2em 0; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="back-link" href="index.html">← HUB</a>
+  <h1>CYBER HEIST</h1>
+  <span class="spacer"></span>
+</div>
+
+<div id="app">
+  <div id="hud">
+    <span id="h-target">NO TARGET</span>
+    <span id="h-stage"></span>
+    <div class="trace"><span>TRACE</span><div class="tbar"><i id="h-trace"></i></div><b id="h-pct">0%</b></div>
+  </div>
+  <div id="stage">
+    <div id="ptitle">&gt; STANDBY</div>
+    <div id="pdesc"></div>
+    <div id="puzzle"></div>
+  </div>
+  <div id="term"></div>
+</div>
+<div class="credit">MADE BY ATHARV TRIPATHI</div>
+
+<div class="overlay" id="menu">
+  <h1>⌨ CYBER<br/>HEIST</h1>
+  <p class="sub">Break into 5 secure systems. Each one is a chain of hacks: code-breaking, circuits, logic gates, memory and timing. The TRACE meter rises every second and with every mistake — hit 100% and you're caught.</p>
+  <div class="big-stat" id="m-loot"></div>
+  <div class="targets" id="targets"></div>
+</div>
+
+<div class="overlay hidden" id="result">
+  <h1 id="r-title">HEIST COMPLETE</h1>
+  <div class="stars" id="r-stars"></div>
+  <div class="big-stat" id="r-loot"></div>
+  <div class="sub" id="r-sub"></div>
+  <div>
+    <button class="btn" id="r-retry">↻ RETRY</button>
+    <button class="btn" id="r-next">NEXT TARGET ▶</button>
+    <button class="btn" id="r-menu">TARGETS</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const rint = n => Math.floor(Math.random() * n);
+const pick = a => a[rint(a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rint(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const h = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const k in attrs) { if (k === 'on') for (const ev in attrs.on) e.addEventListener(ev, attrs.on[ev]); else if (k === 'style') Object.assign(e.style, attrs.style); else e.setAttribute(k, attrs[k]); }
+  for (const c of kids) e.append(c);
+  return e;
+};
+const SAVE_KEY = 'gamerhub_cyberheist';
+
+const TARGETS = [
+  { name: 'PIXEL SAVINGS ATM', lvl: 1, time: 150, loot: 5000, stages: ['codebreak', 'circuit', 'bypass'] },
+  { name: 'NEON MEDICAL DB', lvl: 1, time: 190, loot: 12000, stages: ['sequence', 'breach', 'logic', 'codebreak'] },
+  { name: 'ORBITAL TELECOM', lvl: 2, time: 200, loot: 30000, stages: ['circuit', 'breach', 'bypass', 'logic'] },
+  { name: 'HELIX CORP MAINFRAME', lvl: 2, time: 250, loot: 75000, stages: ['codebreak', 'sequence', 'circuit', 'breach', 'logic'] },
+  { name: 'ZERO VAULT', lvl: 3, time: 300, loot: 250000, stages: ['breach', 'logic', 'circuit', 'codebreak', 'sequence', 'bypass'] },
+];
+
+const PUZ = {};
+
+function loadSave() { try { return Object.assign({ unlocked: 1, best: {} }, JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) { return { unlocked: 1, best: {} }; } }
+function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+let save = loadSave();
+
+// ---------- terminal ----------
+const termQ = [];
+let termBusy = false;
+function log(text, cls = '') { termQ.push({ text, cls }); if (!termBusy) typeNext(); }
+function typeNext() {
+  const item = termQ.shift();
+  if (!item) { termBusy = false; return; }
+  termBusy = true;
+  const line = h('div', { class: item.cls });
+  $('term').append(line);
+  while ($('term').children.length > 6) $('term').firstChild.remove();
+  let i = 0;
+  const step = () => {
+    i += 2;
+    line.textContent = '> ' + item.text.slice(0, i);
+    if (i < item.text.length) setTimeout(step, 12); else setTimeout(typeNext, 40);
+  };
+  step();
+}
+
+// ---------- run state ----------
+let run = null;
+
+function api() {
+  const myRun = run;
+  return {
+    solve() {
+      if (run !== myRun || !run.active) return;
+      run.active = false;
+      log('ACCESS GRANTED · LAYER ' + (run.stage + 1) + ' BYPASSED', 'ok');
+      const f = h('div', { class: 'flash' }, 'ACCESS GRANTED');
+      $('stage').append(f);
+      setTimeout(() => { f.remove(); if (run !== myRun) return; run.stage++; nextStage(); }, 1000);
+    },
+    penalty(p, msg) {
+      if (run !== myRun || !run.active) return;
+      run.pen += p; run.mistakes++;
+      log(msg + '  +' + p + '% TRACE', 'warn');
+      $('stage').classList.remove('shake'); void $('stage').offsetWidth; $('stage').classList.add('shake');
+    },
+    log,
+    onKey(fn) { if (run === myRun) run.onKey = fn; },
+    active: () => run === myRun && run.active,
+  };
+}
+
+function startTarget(i) {
+  if (run && run.cleanup) run.cleanup();
+  const t = TARGETS[i];
+  run = { ti: i, t, stage: 0, elapsed: 0, pen: 0, mistakes: 0, active: false, cleanup: null, onKey: null };
+  $('menu').classList.add('hidden'); $('result').classList.add('hidden');
+  $('h-target').textContent = t.name;
+  $('puzzle').innerHTML = ''; $('ptitle').textContent = '> CONNECTING...'; $('pdesc').textContent = '';
+  $('term').innerHTML = '';
+  log('ROUTING THROUGH 7 PROXIES...', 'dim');
+  log('TARGET: ' + t.name + ' · SECURITY LEVEL ' + t.lvl);
+  log(t.stages.length + ' SECURITY LAYERS DETECTED. TRACE WINDOW ' + t.time + 's.');
+  const myRun = run;
+  setTimeout(() => { if (run === myRun) nextStage(); }, 1600);
+}
+
+function nextStage() {
+  if (run.cleanup) { run.cleanup(); run.cleanup = null; }
+  run.onKey = null;
+  if (run.stage >= run.t.stages.length) return finish(true);
+  const key = run.t.stages[run.stage], P = PUZ[key];
+  $('h-stage').textContent = 'LAYER ' + (run.stage + 1) + '/' + run.t.stages.length;
+  $('ptitle').textContent = '> ' + P.title;
+  $('pdesc').textContent = P.desc;
+  const el = $('puzzle');
+  el.innerHTML = '';
+  run.active = true;
+  log('ENGAGING ' + P.title + '...', 'dim');
+  run.cleanup = P.mount(el, run.t.lvl, api()) || null;
+}
+
+function tracePct() { return run ? Math.min(100, run.elapsed / run.t.time * 100 + run.pen) : 0; }
+
+function finish(won) {
+  run.active = false;
+  if (run.cleanup) { run.cleanup(); run.cleanup = null; }
+  run.onKey = null;
+  const tr = tracePct(), left = 100 - tr, i = run.ti, t = run.t;
+  $('r-next').style.display = 'none';
+  if (won) {
+    const stars = left >= 55 ? 3 : left >= 30 ? 2 : 1;
+    const loot = Math.round(t.loot * (0.5 + left / 200) / 100) * 100;
+    const b = save.best[t.name] || { loot: 0, stars: 0 };
+    save.best[t.name] = { loot: Math.max(b.loot, loot), stars: Math.max(b.stars, stars) };
+    save.unlocked = Math.max(save.unlocked, Math.min(TARGETS.length, i + 2));
+    writeSave();
+    $('r-title').textContent = i === TARGETS.length - 1 ? 'ZERO VAULT CRACKED!' : 'HEIST COMPLETE';
+    $('r-title').style.color = 'var(--g)';
+    $('r-stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    $('r-loot').textContent = '$' + loot.toLocaleString() + ' STOLEN';
+    $('r-sub').textContent = 'Trace at ' + Math.round(tr) + '% · ' + run.mistakes + ' alarm' + (run.mistakes === 1 ? '' : 's') + ' tripped' + (run.mistakes === 0 ? ' · GHOST RUN!' : '');
+    if (i < TARGETS.length - 1) $('r-next').style.display = '';
+    log('DOWNLOAD COMPLETE. DISCONNECTING.', 'ok');
+  } else {
+    $('r-title').textContent = 'TRACED!';
+    $('r-title').style.color = 'var(--warn)';
+    $('r-stars').textContent = '';
+    $('r-loot').textContent = 'CONNECTION SEVERED';
+    $('r-sub').textContent = 'Security traced you at layer ' + (run.stage + 1) + ' of ' + t.stages.length + '. Work faster and avoid tripping alarms.';
+    log('!!! TRACE COMPLETE — CONNECTION TERMINATED !!!', 'warn');
+  }
+  setTimeout(() => $('result').classList.remove('hidden'), 900);
+}
+
+function showMenu() {
+  if (run && run.cleanup) run.cleanup();
+  run = null;
+  $('result').classList.add('hidden');
+  $('h-target').textContent = 'NO TARGET'; $('h-stage').textContent = '';
+  const box = $('targets');
+  box.innerHTML = '';
+  let total = 0;
+  TARGETS.forEach((t, i) => {
+    const b = save.best[t.name], locked = i >= save.unlocked;
+    if (b) total += b.loot;
+    const card = h('button', { class: 'tcard' },
+      h('span', {}, (locked ? '🔒 ' : (b ? '✔ ' : '▶ ')) + t.name, h('br'), h('span', { class: 'lv' }, 'SEC LVL ' + t.lvl + ' · ' + t.stages.length + ' LAYERS · ' + t.time + 's')),
+      h('span', { class: 'st' }, b ? '★'.repeat(b.stars) + '☆'.repeat(3 - b.stars) + ' $' + b.loot.toLocaleString() : (locked ? 'LOCKED' : '$' + t.loot.toLocaleString())));
+    card.disabled = locked;
+    card.addEventListener('click', () => startTarget(i));
+    box.append(card);
+  });
+  $('m-loot').textContent = 'TOTAL STOLEN: $' + total.toLocaleString();
+  $('menu').classList.remove('hidden');
+}
+
+$('r-retry').addEventListener('click', () => startTarget(run.ti));
+$('r-next').addEventListener('click', () => startTarget(run.ti + 1));
+$('r-menu').addEventListener('click', showMenu);
+document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
+document.addEventListener('keydown', e => {
+  if (run && run.active && run.onKey) run.onKey(e);
+  if (e.key === 'Escape' && run && !run.active && !$('result').classList.contains('hidden')) showMenu();
+});
+
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  if (run && run.active) {
+    run.elapsed += dt;
+    if (tracePct() >= 100) finish(false);
+  }
+  const tr = tracePct();
+  $('h-trace').style.width = tr + '%';
+  $('h-trace').style.background = tr > 75 ? 'var(--warn)' : tr > 50 ? 'var(--amber)' : 'var(--g)';
+  $('h-pct').textContent = Math.floor(tr) + '%';
+  requestAnimationFrame(tick);
+}
+
+// ---------- PUZZLE: code breaker ----------
+PUZ.codebreak = {
+  title: 'PASSCODE CRACK',
+  desc: 'Guess the access code. ● = right digit, right slot. ○ = right digit, wrong slot. Digits can repeat.',
+  mount(el, lvl, A) {
+    const L = lvl >= 3 ? 5 : 4, S = lvl === 2 ? 7 : 6, MAX = lvl >= 3 ? 12 : 10;
+    let secret, guesses, cur = [];
+    const hist = h('div', { style: { display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '1.3em', minHeight: '40px' } });
+    const slots = h('div', { class: 'row', style: { fontSize: '2em', letterSpacing: '6px' } });
+    const left = h('div', { style: { color: 'var(--amber)' } });
+    const pad = h('div', { class: 'row' });
+    const reset = () => { secret = Array.from({ length: L }, () => rint(S)); guesses = 0; cur = []; hist.innerHTML = ''; render(); };
+    const render = () => {
+      slots.textContent = Array.from({ length: L }, (_, i) => cur[i] ?? '_').join(' ');
+      left.textContent = 'ATTEMPTS LEFT: ' + (MAX - guesses);
+    };
+    const press = d => { if (cur.length < L) { cur.push(d); render(); } };
+    const back = () => { cur.pop(); render(); };
+    const submit = () => {
+      if (cur.length < L || !A.active()) return;
+      guesses++;
+      let exact = 0;
+      const cs = Array(S).fill(0), cg = Array(S).fill(0);
+      cur.forEach((d, i) => { if (d === secret[i]) exact++; cs[secret[i]]++; cg[d]++; });
+      const common = cs.reduce((s, c, i) => s + Math.min(c, cg[i]), 0);
+      const fb = '●'.repeat(exact) + '○'.repeat(common - exact) + '·'.repeat(L - common);
+      hist.append(h('div', {}, cur.join(' ') + '   ', h('span', { style: { color: 'var(--amber)' } }, fb)));
+      if (exact === L) { A.solve(); return; }
+      cur = [];
+      if (guesses >= MAX) {
+        A.penalty(20, 'LOCKOUT! CODE WAS ' + secret.join(''));
+        A.log('NEW CODE GENERATED.', 'dim');
+        reset();
+      } else render();
+    };
+    for (let d = 0; d < S; d++) pad.append(h('button', { class: 'k', on: { click: () => press(d) } }, String(d)));
+    pad.append(h('button', { class: 'k', on: { click: back } }, '⌫'));
+    pad.append(h('button', { class: 'k', on: { click: submit } }, 'ENTER'));
+    el.append(h('div', { style: { color: '#8fdca6' } }, `CODE: ${L} DIGITS (0-${S - 1})`), hist, slots, left, pad);
+    A.onKey(e => {
+      if (/^[0-9]$/.test(e.key) && +e.key < S) press(+e.key);
+      else if (e.key === 'Backspace') { e.preventDefault(); back(); }
+      else if (e.key === 'Enter') submit();
+    });
+    reset();
+  },
+};
+
+// ---------- PUZZLE: circuit routing ----------
+const DIRS = [[-1, 0, 1, 4], [0, 1, 2, 8], [1, 0, 4, 1], [0, -1, 8, 2]];
+const rotCW = m => ((m << 1) | (m >> 3)) & 15;
+PUZ.circuit = {
+  title: 'POWER REROUTE',
+  desc: 'Rotate the circuit tiles (click) to carry power from the source ◀ to the server ▶.',
+  mount(el, lvl, A) {
+    const n = 4 + lvl;
+    const sr = rint(n), er = rint(n);
+    let path = null;
+    const seen = new Set();
+    const dfs = (r, c, acc) => {
+      if (r === er && c === n - 1) { path = acc.slice(); return true; }
+      for (const [dr, dc] of shuffle(DIRS.map(d => d.slice(0, 2)))) {
+        const nr = r + dr, nc = c + dc, k = nr * n + nc;
+        if (nr < 0 || nc < 0 || nr >= n || nc >= n || seen.has(k)) continue;
+        seen.add(k); acc.push([nr, nc]);
+        if (dfs(nr, nc, acc)) return true;
+        acc.pop();
+      }
+      return false;
+    };
+    seen.add(sr * n); dfs(sr, 0, [[sr, 0]]);
+    const grid = Array.from({ length: n }, () => Array(n).fill(0));
+    const bit = (a, b) => DIRS.find(d => a[0] + d[0] === b[0] && a[1] + d[1] === b[1])[2];
+    path.forEach((p, i) => {
+      let m = 0;
+      m |= i === 0 ? 8 : bit(p, path[i - 1]);
+      m |= i === path.length - 1 ? 2 : bit(p, path[i + 1]);
+      grid[p[0]][p[1]] = m;
+    });
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (!grid[r][c]) grid[r][c] = pick([5, 3, 7, 5, 3]);
+    const powered = () => {
+      const on = new Set();
+      if (!(grid[sr][0] & 8)) return on;
+      const q = [[sr, 0]]; on.add(sr * n);
+      while (q.length) {
+        const [r, c] = q.shift();
+        for (const [dr, dc, b, ob] of DIRS) {
+          const nr = r + dr, nc = c + dc;
+          if (!(grid[r][c] & b) || nr < 0 || nc < 0 || nr >= n || nc >= n || on.has(nr * n + nc) || !(grid[nr][nc] & ob)) continue;
+          on.add(nr * n + nc); q.push([nr, nc]);
+        }
+      }
+      return on;
+    };
+    const solved = on => on.has(er * n + n - 1) && (grid[er][n - 1] & 2);
+    do { for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) for (let k = rint(4); k > 0; k--) grid[r][c] = rotCW(grid[r][c]); } while (solved(powered()));
+
+    const size = Math.min(52, Math.floor((Math.min(window.innerWidth, 820) - 80) / (n + 2)));
+    const board = h('div', { style: { display: 'grid', gridTemplateColumns: `repeat(${n + 2}, ${size}px)`, gap: '2px' } });
+    const cells = [];
+    const svgFor = (m, on) => {
+      const col = on ? '#33ff66' : '#1d6b35', w = on ? 7 : 6;
+      let s = `<svg viewBox="0 0 40 40" width="${size}" height="${size}"><rect x="0" y="0" width="40" height="40" fill="${on ? '#062a12' : '#010a04'}" stroke="#0f5c26"/>`;
+      const ends = { 1: [20, 0], 2: [40, 20], 4: [20, 40], 8: [0, 20] };
+      for (const b of [1, 2, 4, 8]) if (m & b) s += `<line x1="20" y1="20" x2="${ends[b][0]}" y2="${ends[b][1]}" stroke="${col}" stroke-width="${w}" stroke-linecap="square"/>`;
+      s += `<rect x="15" y="15" width="10" height="10" fill="${col}"/></svg>`;
+      return s;
+    };
+    const render = () => {
+      const on = powered();
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) cells[r][c].innerHTML = svgFor(grid[r][c], on.has(r * n + c));
+      return on;
+    };
+    for (let r = 0; r < n; r++) {
+      cells.push([]);
+      board.append(h('div', { style: { color: 'var(--g)', textAlign: 'right', alignSelf: 'center', fontSize: '1.6em' } }, r === sr ? '⚡◀' : ''));
+      for (let c = 0; c < n; c++) {
+        const cell = h('div', { style: { cursor: 'pointer', lineHeight: 0 } });
+        cell.addEventListener('click', () => {
+          if (!A.active()) return;
+          grid[r][c] = rotCW(grid[r][c]);
+          if (solved(render())) A.solve();
+        });
+        cells[r].push(cell); board.append(cell);
+      }
+      board.append(h('div', { style: { color: 'var(--cyan)', alignSelf: 'center', fontSize: '1.6em' } }, r === er ? '▶▣' : ''));
+    }
+    el.append(board);
+    render();
+  },
+};
+
+// ---------- PUZZLE: breach matrix ----------
+const HEX = ['1C', '55', 'BD', 'E9', '7A', 'FF'];
+PUZ.breach = {
+  title: 'BREACH PROTOCOL',
+  desc: 'Build the target sequence in your buffer. Start in the TOP ROW, then alternate: column of your last pick, row of your last pick... Each cell once.',
+  mount(el, lvl, A) {
+    const n = lvl >= 2 ? 6 : 5, B = lvl >= 3 ? 7 : 6, SL = lvl === 1 ? 3 : lvl === 2 ? 4 : 5;
+    let M, target, buf, used, axis, line;
+    const gen = () => {
+      M = Array.from({ length: n }, () => Array.from({ length: n }, () => pick(HEX)));
+      const u = new Set();
+      let ax = 'row', ln = 0;
+      const picks = [];
+      const pre = rint(Math.min(3, B - SL + 1));
+      for (let k = 0; k < pre + SL; k++) {
+        const opts = [];
+        for (let j = 0; j < n; j++) { const [r, c] = ax === 'row' ? [ln, j] : [j, ln]; if (!u.has(r * n + c)) opts.push([r, c]); }
+        const [r, c] = pick(opts);
+        u.add(r * n + c); picks.push(M[r][c]);
+        if (ax === 'row') { ax = 'col'; ln = c; } else { ax = 'row'; ln = r; }
+      }
+      target = picks.slice(pre);
+      buf = []; used = new Set(); axis = 'row'; line = 0;
+    };
+    const matchLen = () => {
+      for (let k = Math.min(buf.length, target.length); k > 0; k--)
+        if (buf.slice(buf.length - k).join() === target.slice(0, k).join()) return k;
+      return 0;
+    };
+    const solvedNow = () => { for (let i = 0; i + target.length <= buf.length; i++) if (buf.slice(i, i + target.length).join() === target.join()) return true; return false; };
+    const tgtEl = h('div', { class: 'row' }), bufEl = h('div', { class: 'row' });
+    const mat = h('div', { style: { display: 'grid', gridTemplateColumns: `repeat(${n}, 52px)`, gap: '4px' } });
+    const box = (txt, col, bg) => h('span', { style: { display: 'inline-block', minWidth: '44px', padding: '4px 6px', border: '1px solid ' + col, color: col, background: bg || 'transparent', textAlign: 'center', fontSize: '1.2em' } }, txt);
+    const render = () => {
+      const ml = matchLen();
+      tgtEl.innerHTML = ''; bufEl.innerHTML = '';
+      tgtEl.append(h('span', { style: { color: '#8fdca6' } }, 'TARGET '));
+      target.forEach((t, i) => tgtEl.append(box(t, i < ml ? '#000' : 'var(--cyan)', i < ml ? 'var(--cyan)' : '')));
+      bufEl.append(h('span', { style: { color: '#8fdca6' } }, 'BUFFER '));
+      for (let i = 0; i < B; i++) bufEl.append(box(buf[i] || '··', buf[i] ? 'var(--g)' : 'var(--gd)'));
+      mat.innerHTML = '';
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+        const active = axis === 'row' ? r === line : c === line, u = used.has(r * n + c);
+        const cell = h('button', { class: 'k', style: { minWidth: '0', padding: '8px 0', background: u ? '#000' : active ? '#0f5c26' : 'var(--gdd)', color: u ? '#1d4d2a' : active ? '#eaffef' : '#3fae63', borderColor: active ? 'var(--g)' : 'var(--gd)' } }, u ? '[]' : M[r][c]);
+        cell.disabled = !active || u;
+        cell.addEventListener('click', () => choose(r, c));
+        mat.append(cell);
+      }
+    };
+    const choose = (r, c) => {
+      if (!A.active()) return;
+      used.add(r * n + c); buf.push(M[r][c]);
+      if (axis === 'row') { axis = 'col'; line = c; } else { axis = 'row'; line = r; }
+      render();
+      if (solvedNow()) { A.solve(); return; }
+      let anyLeft = false;
+      for (let j = 0; j < n; j++) { const [rr, cc] = axis === 'row' ? [line, j] : [j, line]; if (!used.has(rr * n + cc)) anyLeft = true; }
+      if (buf.length >= B || !anyLeft) {
+        A.penalty(18, 'BUFFER OVERFLOW · INTRUSION DETECTED');
+        A.log('MATRIX REGENERATED.', 'dim');
+        gen(); render();
+      }
+    };
+    const resetBtn = h('button', { class: 'k', on: { click: () => { if (!A.active() || !buf.length) return; A.penalty(5, 'BUFFER FLUSHED'); buf = []; used = new Set(); axis = 'row'; line = 0; render(); } } }, 'FLUSH BUFFER (+5%)');
+    el.append(tgtEl, bufEl, mat, resetBtn);
+    gen(); render();
+  },
+};
+
+// ---------- PUZZLE: logic gates ----------
+const GATES = { AND: (a, b) => a & b, OR: (a, b) => a | b, XOR: (a, b) => a ^ b, NAND: (a, b) => 1 - (a & b), NOR: (a, b) => 1 - (a | b) };
+PUZ.logic = {
+  title: 'FIREWALL LOGIC',
+  desc: 'Flip the input switches so the ACCESS output turns on. You have a limited number of flips — think before you click.',
+  mount(el, lvl, A) {
+    const n = 3 + lvl, g1 = lvl >= 3 ? 4 : 3, L2 = g1 === 4 ? [[0, 1], [2, 3]] : [[0, 1], [1, 2]];
+    let c;
+    const evalAll = (x, cc) => {
+      const v1 = cc.l1.map(g => GATES[g.t](x[g.a], x[g.b]));
+      const v2 = cc.l2.map((g, i) => GATES[g.t](v1[L2[i][0]], v1[L2[i][1]]));
+      return { v1, v2, out: GATES[cc.out](v2[0], v2[1]) };
+    };
+    const types = Object.keys(GATES);
+    for (let tries = 0; tries < 5000; tries++) {
+      const pool = [...Array(n).keys()];
+      while (pool.length < g1 * 2) pool.push(rint(n));
+      shuffle(pool);
+      const l1 = [];
+      let ok = true;
+      for (let i = 0; i < g1; i++) { const a = pool[i * 2], b = pool[i * 2 + 1]; if (a === b) ok = false; l1.push({ t: pick(types), a: Math.min(a, b), b: Math.max(a, b) }); }
+      if (!ok) continue;
+      const cc = { l1, l2: L2.map(() => ({ t: pick(types) })), out: pick(types) };
+      const sat = [];
+      for (let m = 0; m < 1 << n; m++) { const x = [...Array(n)].map((_, i) => (m >> i) & 1); if (evalAll(x, cc).out) sat.push(m); }
+      if (!sat.length || sat.length > (1 << n) * 0.35) continue;
+      const s0 = rint(1 << n);
+      if (sat.includes(s0)) continue;
+      const pop = v => v.toString(2).split('1').length - 1;
+      const minF = Math.min(...sat.map(m => pop(m ^ s0)));
+      if (minF < 2) continue;
+      c = { ...cc, s0, minF };
+      break;
+    }
+    const budget = c.minF + (lvl === 1 ? 3 : 2);
+    let x, flips;
+    const resetInputs = () => { x = [...Array(n)].map((_, i) => (c.s0 >> i) & 1); flips = budget; };
+    const VW = 720, VH = 60 + n * 52;
+    const ys = k => Array.from({ length: k }, (_, i) => (VH / (k + 1)) * (i + 1));
+    const yIn = ys(n), y1 = ys(g1), y2 = ys(2), yOut = VH / 2;
+    const ON = '#33ff66', OFF = '#1d4d2a';
+    const wire = (x1, ya, x2, yb, v) => { const mx = (x1 + x2) / 2; return `<path d="M${x1} ${ya} H${mx} V${yb} H${x2}" fill="none" stroke="${v ? ON : OFF}" stroke-width="${v ? 3 : 2}"/>`; };
+    const gate = (gx, gy, t, v) => `<rect x="${gx}" y="${gy - 24}" width="90" height="48" rx="6" fill="${v ? '#0b3d1a' : '#030f07'}" stroke="${v ? ON : '#2f7a46'}" stroke-width="2"/><text x="${gx + 45}" y="${gy + 7}" fill="${v ? '#eaffef' : '#5fbf7c'}" font-size="20" text-anchor="middle" font-family="VT323">${t}</text>`;
+    const svgWrap = h('div', { style: { width: '100%', maxWidth: '720px' } });
+    const info = h('div', { style: { color: 'var(--amber)', fontSize: '1.2em' } });
+    const render = () => {
+      const { v1, v2, out } = evalAll(x, c);
+      let s = `<svg viewBox="0 0 ${VW} ${VH}" width="100%" style="display:block">`;
+      c.l1.forEach((g, i) => { s += wire(90, yIn[g.a], 200, y1[i] - 10, x[g.a]) + wire(90, yIn[g.b], 200, y1[i] + 10, x[g.b]); });
+      c.l2.forEach((g, i) => { s += wire(290, y1[L2[i][0]], 380, y2[i] - 10, v1[L2[i][0]]) + wire(290, y1[L2[i][1]], 380, y2[i] + 10, v1[L2[i][1]]); });
+      s += wire(470, y2[0], 540, yOut - 10, v2[0]) + wire(470, y2[1], 540, yOut + 10, v2[1]);
+      s += wire(630, yOut, 660, yOut, out);
+      x.forEach((v, i) => {
+        s += `<g data-i="${i}" style="cursor:pointer"><rect x="14" y="${yIn[i] - 18}" width="76" height="36" rx="4" fill="${v ? '#0f5c26' : '#000'}" stroke="${v ? ON : '#2f7a46'}" stroke-width="2"/>` +
+          `<text x="52" y="${yIn[i] + 7}" fill="${v ? '#eaffef' : '#5fbf7c'}" font-size="22" text-anchor="middle" font-family="VT323">IN${i + 1}:${v}</text></g>`;
+      });
+      c.l1.forEach((g, i) => { s += gate(200, y1[i], g.t, v1[i]); });
+      c.l2.forEach((g, i) => { s += gate(380, y2[i], g.t, v2[i]); });
+      s += gate(540, yOut, c.out, out);
+      s += `<circle cx="688" cy="${yOut}" r="22" fill="${out ? ON : '#3a0610'}" stroke="${out ? '#eaffef' : '#ff3355'}" stroke-width="3"/><text x="688" y="${yOut + 46}" fill="${out ? ON : '#ff3355'}" font-size="18" text-anchor="middle" font-family="VT323">ACCESS</text></svg>`;
+      svgWrap.innerHTML = s;
+      info.textContent = 'FLIPS LEFT: ' + flips;
+      return out;
+    };
+    svgWrap.addEventListener('click', e => {
+      const g = e.target.closest('[data-i]');
+      if (!g || !A.active()) return;
+      const i = +g.getAttribute('data-i');
+      x[i] ^= 1; flips--;
+      if (render()) { A.solve(); return; }
+      if (flips <= 0) {
+        A.penalty(15, 'FIREWALL LOCKOUT · INPUTS RESET');
+        resetInputs(); render();
+      }
+    });
+    const rst = h('button', { class: 'k', on: { click: () => { if (!A.active()) return; A.penalty(4, 'MANUAL RESET'); resetInputs(); render(); } } }, 'RESET INPUTS (+4%)');
+    el.append(svgWrap, h('div', { class: 'row' }, info, rst));
+    resetInputs(); render();
+  },
+};
+
+// ---------- PUZZLE: memory sequence ----------
+PUZ.sequence = {
+  title: 'NODE HANDSHAKE',
+  desc: 'Watch the nodes light up, then repeat the exact sequence. Two rounds, each one longer.',
+  mount(el, lvl, A) {
+    const k = lvl >= 3 ? 4 : 3, base = 3 + lvl, delay = lvl >= 3 ? 420 : 520;
+    let round = 0, seq = [], pos = 0, showing = false, timers = [];
+    const grid = h('div', { style: { display: 'grid', gridTemplateColumns: `repeat(${k}, 74px)`, gap: '8px' } });
+    const status = h('div', { style: { color: 'var(--amber)', fontSize: '1.2em', minHeight: '1.3em' } });
+    const nodes = [];
+    for (let i = 0; i < k * k; i++) {
+      const b = h('button', { class: 'k', style: { height: '64px', fontSize: '1.1em' } }, '0x' + (16 + rint(240)).toString(16).toUpperCase());
+      b.addEventListener('click', () => tap(i));
+      nodes.push(b); grid.append(b);
+    }
+    const lit = (i, on) => { nodes[i].style.background = on ? 'var(--g)' : ''; nodes[i].style.color = on ? '#000' : ''; nodes[i].style.boxShadow = on ? '0 0 18px var(--g)' : ''; };
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+    const play = () => {
+      showing = true; pos = 0;
+      seq = Array.from({ length: base + round }, () => rint(k * k));
+      status.textContent = 'ROUND ' + (round + 1) + '/2 · WATCH...';
+      seq.forEach((n, j) => { later(() => lit(n, true), 700 + j * delay); later(() => lit(n, false), 700 + j * delay + delay * 0.65); });
+      later(() => { showing = false; status.textContent = 'ROUND ' + (round + 1) + '/2 · REPEAT (' + seq.length + ')'; }, 700 + seq.length * delay);
+    };
+    const tap = i => {
+      if (showing || !A.active()) return;
+      lit(i, true); later(() => lit(i, false), 160);
+      if (i !== seq[pos]) {
+        A.penalty(15, 'HANDSHAKE REJECTED');
+        later(play, 500);
+        showing = true;
+        return;
+      }
+      pos++;
+      status.textContent = 'ROUND ' + (round + 1) + '/2 · ' + pos + '/' + seq.length;
+      if (pos === seq.length) {
+        round++;
+        showing = true;
+        if (round >= 2) later(() => A.solve(), 300);
+        else { A.log('HANDSHAKE ' + round + '/2 ACCEPTED', 'dim'); later(play, 600); }
+      }
+    };
+    A.onKey(e => { if (k === 3 && /^[1-9]$/.test(e.key)) tap(+e.key - 1); });
+    el.append(grid, status);
+    play();
+    return () => timers.forEach(clearTimeout);
+  },
+};
+
+// ---------- PUZZLE: timing bypass ----------
+PUZ.bypass = {
+  title: 'SIGNAL BYPASS',
+  desc: 'Lock the scanner while it sits inside the green window. Each lock makes it faster and the window smaller. SPACE or click LOCK.',
+  mount(el, lvl, A) {
+    const need = lvl >= 3 ? 4 : 3;
+    let hits = 0, pos = 0, dir = 1, speed = 0.75 + 0.2 * lvl, win = 0.21 - 0.035 * lvl, zx = 0, raf = 0, lastT = performance.now();
+    const bar = h('div', { style: { position: 'relative', width: 'min(640px, 100%)', height: '56px', border: '2px solid var(--gd)', background: '#000' } });
+    const zone = h('div', { style: { position: 'absolute', top: '0', bottom: '0', background: 'rgba(51,255,102,0.3)', borderLeft: '2px solid var(--g)', borderRight: '2px solid var(--g)' } });
+    const cur = h('div', { style: { position: 'absolute', top: '-6px', bottom: '-6px', width: '4px', background: 'var(--cyan)', boxShadow: '0 0 10px var(--cyan)' } });
+    bar.append(zone, cur);
+    const pips = h('div', { style: { fontSize: '1.6em', color: 'var(--amber)', letterSpacing: '6px' } });
+    const place = () => { zx = 0.05 + Math.random() * (0.9 - win); zone.style.left = zx * 100 + '%'; zone.style.width = win * 100 + '%'; pips.textContent = '■'.repeat(hits) + '□'.repeat(need - hits); };
+    const lock = () => {
+      if (!A.active()) return;
+      if (pos >= zx && pos <= zx + win) {
+        hits++;
+        if (hits >= need) { pips.textContent = '■'.repeat(need); A.solve(); return; }
+        speed *= 1.18; win *= 0.8;
+        A.log('SIGNAL LOCK ' + hits + '/' + need, 'dim');
+      } else A.penalty(8, 'MISSED LOCK · ALERT RAISED');
+      place();
+    };
+    const frame = now => {
+      const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+      if (A.active()) {
+        pos += dir * speed * dt;
+        if (pos > 1) { pos = 1; dir = -1; } else if (pos < 0) { pos = 0; dir = 1; }
+        cur.style.left = `calc(${pos * 100}% - 2px)`;
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    A.onKey(e => { if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); lock(); } });
+    el.append(bar, pips, h('button', { class: 'k big', on: { click: lock } }, 'LOCK'));
+    place();
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  },
+};
+
+showMenu();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
