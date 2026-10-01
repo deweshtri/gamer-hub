@@ -15,6 +15,9 @@ then open http://localhost:8000/
 ## Games
 `index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`, `zombie-survival.html`, `neon-drift.html`, `ninja-dash.html`, `tower-defense.html`, `cube-rush.html`, `cyber-heist.html`
 
+## Pause / resume (all games)
+Every game page loads `pause.js` as the first script in `<head>` (`<script src="pause.js"></script>` right after `<meta charset>`). It adds a ❚❚ PAUSE button (replaces the topbar `.spacer`, or floats top-right if there's no topbar), a P key toggle (Esc/P to resume), and auto-pauses when the tab is hidden. It works by freezing time globally (rAF, setTimeout/setInterval, performance.now, Date.now, Web Audio) and blocking game input while paused — so games need no per-game pause code. **Any new game must include it the same way.**
+
 ## Multiplayer control scheme
 Every game has a "vs Bot" / "2 Players" mode-select screen:
 - **Sky Jumper**: P1 Space / left-tap, P2 Enter / right-tap — two birds dodge shared obstacles, last alive wins
