@@ -111,12 +111,23 @@ const h = (tag, attrs = {}, ...kids) => {
 const SAVE_KEY = 'gamerhub_cyberheist';
 
 const TARGETS = [
-  { name: 'PIXEL SAVINGS ATM', lvl: 1, time: 150, loot: 5000, stages: ['typehack', 'riddle', 'bypass'] },
-  { name: 'NEON MEDICAL DB', lvl: 1, time: 190, loot: 12000, stages: ['pyquiz', 'typehack', 'sequence', 'riddle'] },
-  { name: 'ORBITAL TELECOM', lvl: 2, time: 210, loot: 30000, stages: ['riddle', 'codebreak', 'typehack', 'pyquiz'] },
-  { name: 'HELIX CORP MAINFRAME', lvl: 2, time: 260, loot: 75000, stages: ['typehack', 'pyquiz', 'sequence', 'riddle', 'bypass'] },
-  { name: 'ZERO VAULT', lvl: 3, time: 320, loot: 250000, stages: ['riddle', 'typehack', 'codebreak', 'pyquiz', 'sequence', 'typehack'] },
+  { name: 'PIXEL SAVINGS ATM', lvl: 1, time: 150, loot: 5000, layers: 3 },
+  { name: 'NEON MEDICAL DB', lvl: 1, time: 190, loot: 12000, layers: 4 },
+  { name: 'ORBITAL TELECOM', lvl: 2, time: 210, loot: 30000, layers: 4 },
+  { name: 'HELIX CORP MAINFRAME', lvl: 2, time: 260, loot: 75000, layers: 5 },
+  { name: 'ZERO VAULT', lvl: 3, time: 320, loot: 250000, layers: 6 },
 ];
+const STAGE_POOL = ['typehack', 'riddle', 'pyquiz', 'sequence', 'bypass', 'codebreak'];
+
+// Fresh random lineup every run: always a riddle and a code challenge, never the same puzzle twice in a row.
+function buildStages(t) {
+  for (;;) {
+    const st = ['riddle', pick(['typehack', 'pyquiz'])];
+    while (st.length < t.layers) st.push(pick(STAGE_POOL));
+    shuffle(st);
+    if (st.every((k, i) => i === 0 || k !== st[i - 1])) return st;
+  }
+}
 
 const PUZ = {};
 
@@ -173,14 +184,14 @@ function api() {
 function startTarget(i) {
   if (run && run.cleanup) run.cleanup();
   const t = TARGETS[i];
-  run = { ti: i, t, stage: 0, elapsed: 0, pen: 0, mistakes: 0, active: false, cleanup: null, onKey: null };
+  run = { ti: i, t, stages: buildStages(t), stage: 0, elapsed: 0, pen: 0, mistakes: 0, active: false, cleanup: null, onKey: null };
   $('menu').classList.add('hidden'); $('result').classList.add('hidden');
   $('h-target').textContent = t.name;
   $('puzzle').innerHTML = ''; $('ptitle').textContent = '> CONNECTING...'; $('pdesc').textContent = '';
   $('term').innerHTML = '';
   log('ROUTING THROUGH 7 PROXIES...', 'dim');
   log('TARGET: ' + t.name + ' · SECURITY LEVEL ' + t.lvl);
-  log(t.stages.length + ' SECURITY LAYERS DETECTED. TRACE WINDOW ' + t.time + 's.');
+  log(run.stages.length + ' SECURITY LAYERS DETECTED. TRACE WINDOW ' + t.time + 's.');
   const myRun = run;
   setTimeout(() => { if (run === myRun) nextStage(); }, 1600);
 }
@@ -188,9 +199,9 @@ function startTarget(i) {
 function nextStage() {
   if (run.cleanup) { run.cleanup(); run.cleanup = null; }
   run.onKey = null;
-  if (run.stage >= run.t.stages.length) return finish(true);
-  const key = run.t.stages[run.stage], P = PUZ[key];
-  $('h-stage').textContent = 'LAYER ' + (run.stage + 1) + '/' + run.t.stages.length;
+  if (run.stage >= run.stages.length) return finish(true);
+  const key = run.stages[run.stage], P = PUZ[key];
+  $('h-stage').textContent = 'LAYER ' + (run.stage + 1) + '/' + run.stages.length;
   $('ptitle').textContent = '> ' + P.title;
   $('pdesc').textContent = P.desc;
   const el = $('puzzle');
@@ -227,7 +238,7 @@ function finish(won) {
     $('r-title').style.color = 'var(--warn)';
     $('r-stars').textContent = '';
     $('r-loot').textContent = 'CONNECTION SEVERED';
-    $('r-sub').textContent = 'Security traced you at layer ' + (run.stage + 1) + ' of ' + t.stages.length + '. Work faster and avoid tripping alarms.';
+    $('r-sub').textContent = 'Security traced you at layer ' + (run.stage + 1) + ' of ' + run.stages.length + '. Work faster and avoid tripping alarms.';
     log('!!! TRACE COMPLETE — CONNECTION TERMINATED !!!', 'warn');
   }
   setTimeout(() => $('result').classList.remove('hidden'), 900);
@@ -245,7 +256,7 @@ function showMenu() {
     const b = save.best[t.name], locked = i >= save.unlocked;
     if (b) total += b.loot;
     const card = h('button', { class: 'tcard' },
-      h('span', {}, (locked ? '🔒 ' : (b ? '✔ ' : '▶ ')) + t.name, h('br'), h('span', { class: 'lv' }, 'SEC LVL ' + t.lvl + ' · ' + t.stages.length + ' LAYERS · ' + t.time + 's')),
+      h('span', {}, (locked ? '🔒 ' : (b ? '✔ ' : '▶ ')) + t.name, h('br'), h('span', { class: 'lv' }, 'SEC LVL ' + t.lvl + ' · ' + t.layers + ' RANDOM LAYERS · ' + t.time + 's')),
       h('span', { class: 'st' }, b ? '★'.repeat(b.stars) + '☆'.repeat(3 - b.stars) + ' $' + b.loot.toLocaleString() : (locked ? 'LOCKED' : '$' + t.loot.toLocaleString())));
     card.disabled = locked;
     card.addEventListener('click', () => startTarget(i));
@@ -390,23 +401,149 @@ const RIDDLES = [
   { q: 'What can fill a room but takes up no space?', a: 'Light', w: ['Water', 'Air', 'Boxes'] },
   { q: 'What is full of holes but still holds water?', a: 'A sponge', w: ['A bucket', 'A net', 'A cup'] },
   { q: 'What question can you never answer "yes" to?', a: 'Are you asleep?', w: ['Are you hungry?', 'Are you a hacker?', 'Is it raining?'] },
+  { q: 'What has legs but doesn\'t walk?', a: 'A table', w: ['A snake', 'A cloud', 'A fish'] },
+  { q: 'What has a thumb and four fingers but isn\'t alive?', a: 'A glove', w: ['A hand', 'A robot', 'A crab'] },
+  { q: 'What gets bigger the more you take away from it?', a: 'A hole', w: ['A pizza', 'A balloon', 'A pile of sand'] },
+  { q: 'What can you hold in your left hand but never in your right hand?', a: 'Your right elbow', w: ['A pencil', 'Your phone', 'A cup'] },
+  { q: 'What is always in front of you but can\'t be seen?', a: 'The future', w: ['Your nose', 'The wind', 'A mirror'] },
+  { q: 'What goes up and down but never moves?', a: 'Stairs', w: ['An elevator', 'A yo-yo', 'A kite'] },
+  { q: 'I have cities but no houses, forests but no trees, and water but no fish. What am I?', a: 'A map', w: ['A dream', 'A cloud', 'A song'] },
+  { q: 'What kind of band never plays music?', a: 'A rubber band', w: ['A rock band', 'A boy band', 'A marching band'] },
+  { q: 'Which building has the most stories?', a: 'A library', w: ['A skyscraper', 'A hotel', 'A castle'] },
+  { q: 'I get smaller every time I take a bath. What am I?', a: 'Soap', w: ['A sponge', 'A towel', 'A rubber duck'] },
+  { q: 'I\'m black when you buy me, red when you use me, and gray when you throw me away. What am I?', a: 'Charcoal', w: ['A tire', 'A pen', 'A rose'] },
+  { q: 'What has one head, one foot and four legs?', a: 'A bed', w: ['A dog', 'A table', 'A chair'] },
+  { q: 'What can\'t talk, but answers when you speak to it?', a: 'An echo', w: ['A parrot', 'A phone', 'A robot'] },
+  { q: 'The more of me there is, the less you see. What am I?', a: 'Darkness', w: ['Light', 'Glasses', 'Water'] },
+  { q: 'I have branches, but no fruit, trunk or leaves. What am I?', a: 'A bank', w: ['A tree', 'A river', 'A road'] },
+  { q: 'What runs all the way around a yard without moving?', a: 'A fence', w: ['A dog', 'A lawnmower', 'A ball'] },
+  { q: 'What can you break without ever touching it?', a: 'A promise', w: ['A glass', 'An egg', 'A stick'] },
+  { q: 'I copy myself and spread from computer to computer. What am I?', a: 'A virus', w: ['A printer', 'A mouse', 'A cable'] },
+  { q: 'I\'m a bug, but not an insect. Where do you find me?', a: 'In computer code', w: ['In a garden', 'In a jar', 'In soup'] },
+  { q: 'I have a spine but no bones. What am I?', a: 'A book', w: ['A snake', 'A jellyfish', 'A cactus'] },
+  { q: 'Which 5-letter word gets shorter when you add two letters to it?', a: 'Short', w: ['Small', 'Brief', 'Tiny'] },
+  { q: 'What has 13 hearts but no other organs?', a: 'A deck of cards', w: ['A hospital', 'A valentine', 'A zombie'] },
+  { q: 'Where does today come before yesterday?', a: 'In a dictionary', w: ['In a calendar', 'In space', 'In a dream'] },
+  { q: 'I pass through walls without opening doors and bring you the internet. What am I?', a: 'Wi-Fi', w: ['A ghost', 'A cat', 'The wind'] },
+  { q: 'What is so fragile that saying its name breaks it?', a: 'Silence', w: ['Glass', 'An egg', 'A secret'] },
+  { q: 'What comes once in a minute, twice in a moment, but never in a thousand years?', a: 'The letter M', w: ['A second', 'A blink', 'The moon'] },
+  { q: 'What goes through cities and fields but never moves?', a: 'A road', w: ['A train', 'A car', 'A bird'] },
+  { q: 'If you drop me I\'ll crack, but smile at me and I\'ll smile back. What am I?', a: 'A mirror', w: ['An egg', 'A phone', 'A plate'] },
+  { q: 'What kind of room has no doors or windows?', a: 'A mushroom', w: ['A closet', 'A bathroom', 'A cave'] },
+  { q: 'What has ears but cannot hear?', a: 'Corn', w: ['A rabbit', 'A cup', 'A statue'] },
+  { q: 'What has its bottom at the top?', a: 'Your legs', w: ['A bottle', 'A cup', 'A tree'] },
+  { q: 'I\'m light as a feather, but even the strongest person can\'t hold me for long. What am I?', a: 'Your breath', w: ['A feather', 'A cloud', 'A balloon'] },
+  { q: 'What gets sharper the more you use it?', a: 'Your brain', w: ['A knife', 'A pencil', 'A sword'] },
+  { q: 'Which word is spelled wrong in every dictionary?', a: 'Wrong', w: ['Spelling', 'Dictionary', 'Error'] },
+  { q: 'What lets you look right through a wall?', a: 'A window', w: ['A drill', 'A camera', 'A ladder'] },
 ];
 
-const usedBank = new Set();
+// Remember what the player has already seen (across visits) so content doesn't repeat until a bank runs out.
+const SEEN_KEY = 'gamerhub_cyberheist_seen';
+const usedBank = (() => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY)) || []); } catch (e) { return new Set(); } })();
+function saveSeen() { try { localStorage.setItem(SEEN_KEY, JSON.stringify([...usedBank])); } catch (e) {} }
 function drawFrom(list, n, keyOf) {
   let pool = list.filter(x => !usedBank.has(keyOf(x)));
   if (pool.length < n) { list.forEach(x => usedBank.delete(keyOf(x))); pool = list.slice(); }
   const out = shuffle(pool.slice()).slice(0, n);
   out.forEach(x => usedBank.add(keyOf(x)));
+  saveSeen();
   return out;
 }
+// Half hand-written (unseen) items, half freshly generated ones, with no duplicates inside one puzzle.
+function mixFresh(bankItems, gen, n, keyOf) {
+  const nBank = Math.min(bankItems.length, Math.ceil(n / 2));
+  const out = drawFrom(bankItems, nBank, keyOf);
+  const keys = new Set(out.map(keyOf));
+  for (let tries = 0; out.length < n && tries < 200; tries++) {
+    const g = gen();
+    if (!keys.has(keyOf(g))) { keys.add(keyOf(g)); out.push(g); }
+  }
+  return shuffle(out);
+}
+
+// ---------- endless content generators ----------
+const ri = (a, b) => a + rint(b - a + 1);
+const WORDS = ['hack', 'vault', 'code', 'ninja', 'pixel', 'cyber', 'laser', 'robot', 'ghost', 'data', 'byte', 'loot', 'alarm', 'drone', 'shadow'];
+const OBJ = ['guard', 'camera', 'laser', 'door', 'drone', 'alarm', 'turret', 'vault'];
+const NAMES = ['ghost', 'neo', 'byte', 'shadow', 'glitch', 'zero', 'pixel', 'nova'];
+const COLORS = ['red', 'blue', 'green', 'gold', 'black', 'silver'];
+const distinct = (n, lo, hi) => { const s = new Set(); while (s.size < n) s.add(ri(lo, hi)); return [...s]; };
+const pyList = a => '[' + a.join(', ') + ']';
+
+function quiz(code, ans, cands) {
+  ans = String(ans);
+  const w = [];
+  for (const c of cands.map(String)) if (c !== ans && c !== '' && !w.includes(c)) w.push(c);
+  for (let k = 1; w.length < 3; k++) { const f = /^-?\d+$/.test(ans) ? String(+ans + k * (k % 2 ? 1 : -1) * 2) : ans + '!'.repeat(k); if (f !== ans && !w.includes(f)) w.push(f); }
+  return { code, a: ans, w: w.slice(0, 3), gen: true };
+}
+
+const PY_GEN = {
+  1: [
+    () => { const a = ri(2, 20), b = ri(2, 20); return quiz(`print(${a} + ${b})`, a + b, [`${a}${b}`, `${a} + ${b}`, a + b + 1]); },
+    () => { const a = ri(1, 9), b = ri(2, 6), c = ri(2, 5); return quiz(`print(${a} + ${b} * ${c})`, a + b * c, [(a + b) * c, a + b + c, a * b + c]); },
+    () => { const s = pick(['ha', 'yo', 'ab', 'hi', 'go', 'ok']), n = ri(2, 4); return quiz(`print("${s}" * ${n})`, s.repeat(n), [s + n, Array(n).fill(s).join(' '), s.repeat(n + 1)]); },
+    () => { const w = pick(WORDS); return quiz(`print(len("${w}"))`, w.length, [w.length + 1, w.length - 1, w]); },
+    () => { const a = ri(1, 15), b = ri(1, 9); return quiz(`x = ${a}\nx = x + ${b}\nprint(x)`, a + b, [a, `${a}${b}`, 'x']); },
+    () => { const w = pick(WORDS); return quiz(`print("${w}".upper())`, w.toUpperCase(), [w, w[0].toUpperCase() + w.slice(1), 'upper']); },
+    () => { const [a, b] = distinct(2, 1, 30); return quiz(`print(${a} > ${b})`, a > b ? 'True' : 'False', [a > b ? 'False' : 'True', a, b]); },
+    () => { const a = ri(2, 9), p = ri(2, 3); return quiz(`print(${a} ** ${p})`, a ** p, [a * p, a + p, `${a}${p}`]); },
+    () => { const n = distinct(3, 1, 40), f = pick(['max', 'min']); const ans = f === 'max' ? Math.max(...n) : Math.min(...n); return quiz(`print(${f}(${n.join(', ')}))`, ans, [...n.filter(v => v !== ans), n[0] + n[1] + n[2]]); },
+    () => { const [w1, w2] = [pick(WORDS), pick(NAMES)]; return quiz(`print("${w1}" + "${w2}")`, w1 + w2, [`${w1} ${w2}`, `${w1}+${w2}`, w2 + w1]); },
+  ],
+  2: [
+    () => { let a, b; do { a = ri(10, 50); b = ri(3, 9); } while (a % b === 0); const q = Math.floor(a / b); return quiz(`print(${a} // ${b})`, q, [(a / b).toFixed(2), a % b, q + 1]); },
+    () => { let a, b; do { a = ri(10, 50); b = ri(3, 9); } while (a % b === 0); return quiz(`print(${a} % ${b})`, a % b, [Math.floor(a / b), b - (a % b), (a % b) + 1]); },
+    () => { const n = distinct(4, 1, 30), i = ri(0, 3); return quiz(`nums = ${pyList(n)}\nprint(nums[${i}])`, n[i], [n[(i + 1) % 4], n[(i + 3) % 4], i]); },
+    () => { const w = pick(WORDS.filter(x => x.length >= 4)), i = ri(0, w.length - 2); return quiz(`print("${w}"[${i}])`, w[i], [w[i + 1], i, w.slice(i, i + 2)]); },
+    () => { const n = ri(3, 5), r = (a, b) => Array.from({ length: b - a }, (_, k) => a + k).join(' '); return quiz(`for i in range(${n}):\n    print(i)`, r(0, n), [r(1, n + 1), r(0, n + 1), n]); },
+    () => { const w = pick(WORDS), c = pick('aeiourstk'.split('')); return quiz(`print("${c}" in "${w}")`, w.includes(c) ? 'True' : 'False', [w.includes(c) ? 'False' : 'True', c, 'None']); },
+    () => { const items = distinct(ri(2, 4), 1, 20), v = ri(21, 40); return quiz(`items = ${pyList(items)}\nitems.append(${v})\nprint(len(items))`, items.length + 1, [items.length, v, items.length + 2]); },
+    () => { const a = ri(2, 9), b = ri(1, 9); return quiz(`print(int("${a}") + ${b})`, a + b, [`${a}${b}`, `"${a + b}"`, 'Error']); },
+  ],
+  3: [
+    () => { const w = pick(WORDS.filter(x => x.length >= 4)); const r = [...w].reverse().join(''); return quiz(`print("${w}"[::-1])`, r, [w, w[0], r.slice(0, -1)]); },
+    () => { const n = distinct(ri(3, 4), 1, 15), sm = n.reduce((a, b) => a + b, 0); return quiz(`print(sum(${pyList(n)}))`, sm, [n.join(''), n.length, sm + 1]); },
+    () => { const n = distinct(4, 1, 30), k = ri(1, 2); return quiz(`x = ${pyList(n)}\nprint(x[-${k}])`, n[n.length - k], [n[k - 1], `-${k}`, 'Error']); },
+    () => { const L = distinct(3, 0, 25).map(i => String.fromCharCode(97 + i)), sep = pick(['-', '+', '.', '*']); return quiz(`print("${sep}".join([${L.map(c => `"${c}"`).join(', ')}]))`, L.join(sep), [L.join(''), sep + L.join(sep) + sep, L.join(' ')]); },
+    () => { const [v, t] = pick([['0', false], ['1', true], ['""', false], ['"hi"', true], ['7', true], ['[]', false]]); return quiz(`print(bool(${v}))`, t ? 'True' : 'False', [t ? 'False' : 'True', 'None', 'Error']); },
+    () => { const i = ri(1, 20), d = pick([1, 2, 3, 4, 6, 7, 8, 9]), x = `${i}.${d}`, r = d > 5 ? i + 1 : i; return quiz(`print(round(${x}))`, r, [d > 5 ? i : i + 1, x, `${r}.0`]); },
+    () => { const w = pick(WORDS.filter(x => x.length >= 5)), a = ri(0, 1), b = a + ri(2, 3); return quiz(`print("${w}"[${a}:${b}])`, w.slice(a, b), [w.slice(a, b + 1), w.slice(a + 1, b + 1), w.slice(0, a + 1)]); },
+    () => { const n = distinct(3, 1, 6), k = ri(2, 4); return quiz(`print([x * ${k} for x in ${pyList(n)}])`, pyList(n.map(x => x * k)), [n.map(x => x * k).join(' '), pyList(n), n.reduce((a, b) => a + b, 0) * k]); },
+  ],
+};
+function genPyQuiz(lvl) {
+  const tier = lvl === 1 ? 1 : lvl === 2 ? (Math.random() < 0.7 ? 2 : 1) : (Math.random() < 0.7 ? 3 : 2);
+  return pick(PY_GEN[tier])();
+}
+
+const TYPE_GEN = {
+  1: [
+    () => `hack("${pick(NAMES)}")`, () => `password = "${pick(NAMES)}${ri(10, 99)}"`, () => `${pick(OBJ)}.sleep()`,
+    () => `coins = ${ri(100, 999)}`, () => `print("${pick(['access granted', 'ninja mode on', 'hello hacker', 'door open', 'we are in'])}")`,
+    () => `open_door(${ri(1, 9)})`, () => `alarm = ${pick(['False', 'None', '0'])}`, () => `import ${pick(['vault', 'secrets', 'laser', 'drone'])}`,
+  ],
+  2: [
+    () => `for i in range(${ri(2, 9)}):`, () => `if ${pick(OBJ)} == "${pick(['asleep', 'offline', 'broken', 'gone'])}":`,
+    () => `vault.unlock(code=${ri(1000, 9999)})`, () => `${pick(OBJ)}.disable()`, () => `${pick(OBJ)}_${ri(1, 9)}.power = 0`,
+    () => `keys = ["${pick(COLORS)}", "${pick(COLORS)}"]`, () => `while ${pick(OBJ)}.active: wait(${ri(1, 5)})`, () => `print("${pick(NAMES)} is in!")`,
+  ],
+  3: [
+    () => `def crack_${pick(NAMES)}(pin): return pin[::-1]`, () => `loot = [gold * ${ri(2, 9)} for gold in vault]`,
+    () => `if not alarm and ${pick(OBJ)}.is_open(): run()`, () => `data = {"user": "${pick(NAMES)}", "pass": "${pick(NAMES)}${ri(10, 99)}"}`,
+    () => `for cam in cameras[:${ri(2, 6)}]: cam.loop_video()`, () => `while vault.locked: vault.try_pin(${ri(1000, 9999)})`,
+    () => `escape = sorted(exits, key=len)[${ri(0, 2)}]`, () => `print(f"stolen: {amount * ${ri(2, 9)}} coins")`,
+  ],
+};
+function genTypeLine(lvl) { return pick(TYPE_GEN[lvl])(); }
 
 // ---------- PUZZLE: type hack ----------
 PUZ.typehack = {
   title: 'TYPE HACK',
   desc: 'Type each line of hacker code EXACTLY as shown (spaces and symbols too). Fast fingers = less trace!',
   mount(el, lvl, A) {
-    const lines = drawFrom(TYPE_LINES[lvl], 2 + lvl, x => 't:' + x);
+    const lines = mixFresh(TYPE_LINES[lvl], () => genTypeLine(lvl), 2 + lvl, x => 't:' + x);
     let idx = 0, typos = 0, prevLen = 0;
     const counter = h('div', { style: { color: 'var(--amber)', fontSize: '1.2em' } });
     const show = h('div', { style: { fontFamily: 'monospace', fontSize: 'clamp(15px, 3.6vw, 24px)', background: '#000', border: '1px solid var(--gd)', padding: '14px 16px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-all', width: '100%', maxWidth: '700px', boxSizing: 'border-box', minHeight: '64px' } });
@@ -499,7 +636,7 @@ PUZ.pyquiz = {
   desc: 'The guard bot runs this Python code. Pick what it PRINTS to sneak past! (Click or press 1-4.)',
   mount(el, lvl, A) {
     const pool = PY_QUIZ.filter(q => q.lvl <= lvl && (lvl === 1 || q.lvl >= lvl - 1));
-    mountChoices(el, A, drawFrom(pool, 2 + lvl, x => 'p:' + x.code), 'CODE',
+    mountChoices(el, A, mixFresh(pool, () => genPyQuiz(lvl), 2 + lvl, x => 'p:' + x.code), 'CODE',
       it => h('pre', { style: { fontFamily: 'monospace', fontSize: 'clamp(16px, 3.6vw, 24px)', color: '#eaffef', background: '#000', border: '1px solid var(--gd)', padding: '14px 18px', borderRadius: '4px', margin: '0' } }, it.code));
   },
 };
