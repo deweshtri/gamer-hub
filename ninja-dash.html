@@ -28,6 +28,7 @@ body { display:flex; flex-direction:column; min-height:100vh; overflow:hidden; a
 .stat.dim { color:#b08bb8; }
 .newbest { color:#00e5ff; text-shadow:0 0 10px #00e5ff; font-size:0.7rem; margin:0.6em 0; }
 </style>
+<link rel="stylesheet" href="landscape.css?v=1" />
 </head>
 <body>
 <div class="topbar">
@@ -69,8 +70,13 @@ const GRAV = 2300, JUMP_V = -760, DJUMP_V = -680, STOMP_V = -540;
 const DASH_T = 0.2, DASH_CD = 1.1, DASH_MULT = 2.4;
 const BEST_KEY = 'gamerhub_ninjadash';
 
+function chromeHeight() {
+  const credit = document.querySelector('.credit');
+  const creditH = credit && getComputedStyle(credit).position !== 'fixed' ? credit.offsetHeight : 0;
+  return document.querySelector('.topbar').offsetHeight + creditH + 20;
+}
 function fitCanvas() {
-  const maxW = window.innerWidth - 16, maxH = window.innerHeight - 110;
+  const maxW = window.innerWidth - 16, maxH = window.innerHeight - chromeHeight();
   const s = Math.min(maxW / W, maxH / H);
   cv.style.width = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';

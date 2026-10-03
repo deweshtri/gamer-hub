@@ -21,6 +21,9 @@ All games use a retro arcade style (Press Start 2P / VT323 fonts, dark neon pale
 ## Pause / resume (all games)
 Every game page loads `pause.js` as the first script in `<head>` (`<script src="pause.js"></script>` right after `<meta charset>`). It adds a ❚❚ PAUSE button (replaces the topbar `.spacer`, or floats top-right if there's no topbar), a P key toggle (Esc/P to resume), and auto-pauses when the tab is hidden. It works by freezing time globally (rAF, setTimeout/setInterval, performance.now, Date.now, Web Audio) and blocking game input while paused — so games need no per-game pause code. **Any new game must include it the same way.**
 
+## Landscape (phones / tablets sideways)
+Every game page links `landscape.css` as the **last** stylesheet before `</head>`. Its rules only apply under `@media (orientation: landscape) and (max-height: 600px)`: compact topbar, smaller pause button, credit moved to a fixed bottom-left corner, and per-game side-by-side layouts (board/canvas left, info/controls right) scoped with `body:has(<unique element>)`. Layout only — no gameplay changes. New games must link it and add a scoped block if their layout overflows at ~844×390.
+
 ## Multiplayer control scheme
 Every game has a "vs Bot" / "2 Players" mode-select screen:
 - **Sky Jumper**: P1 Space / left-tap, P2 Enter / right-tap — two birds dodge shared obstacles, last alive wins

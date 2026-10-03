@@ -1,0 +1,110 @@
+/* Landscape layouts for phones / small tablets turned sideways. Linked last in every game's <head>.
+   Layout only — never change gameplay here. Each game block is scoped with body:has(<unique element>). */
+@media (orientation: landscape) and (max-height: 600px) {
+  /* ---- shared: give the game as much height as possible ---- */
+  .topbar { padding: 4px 10px !important; gap: 8px !important; }
+  .topbar h1 { font-size: clamp(0.6rem, 2vw, 0.8rem) !important; }
+  .topbar .back-link { padding: 0.5em 0.7em !important; font-size: 0.5rem !important; }
+  .topbar .spacer { width: 96px !important; }
+  html #gh-pause-btn { top: 4px; right: 6px; font-size: 12px; padding: 4px 9px; border-width: 2px; box-shadow: 0 3px 0 #111; }
+  .credit {
+    position: fixed !important; left: 6px !important; bottom: 3px !important; top: auto !important;
+    width: auto !important; margin: 0 !important; padding: 0 !important; font-size: 8px !important;
+    text-align: left !important; z-index: 50; pointer-events: none; opacity: 0.6;
+  }
+  .overlay h1 { font-size: clamp(1rem, 4vw, 1.8rem) !important; }
+
+  /* ---- canvas games that fill the remaining height (Zombie Survival, Neon Drift, Ninja Dash, Cube Rush) ---- */
+  body:has(.game-wrap > #game) { height: 100vh; height: 100dvh; min-height: 0; }
+  body:has(.game-wrap > #game) .game-wrap { flex: 1 1 0; min-height: 0; padding: 2px; }
+  #hudbtns { top: 40px !important; }
+
+  /* ---- Tic-Tac-Toe: board left, info right ---- */
+  body:has(#board) {
+    display: grid; grid-template-columns: auto minmax(180px, 300px); grid-template-rows: auto auto auto auto auto 1fr;
+    column-gap: 28px; justify-content: center; align-content: start; justify-items: center; min-height: 0;
+  }
+  body:has(#board) .topbar { grid-column: 1 / -1; width: 100%; }
+  body:has(#board) #board { grid-column: 1; grid-row: 2 / 7; width: calc(100vh - 64px); height: calc(100vh - 64px); width: calc(100dvh - 64px); height: calc(100dvh - 64px); margin: 0; }
+  body:has(#board) .modes { grid-column: 2; grid-row: 2; margin-top: 8px; }
+  body:has(#board) .scoreboard { grid-column: 2; grid-row: 3; display: block; text-align: center; line-height: 1.3; margin: 0.3em 0; }
+  body:has(#board) .status { grid-column: 2; grid-row: 4; }
+  body:has(#board) #reset-btn { grid-column: 2; grid-row: 5; margin-top: 0.4em; }
+
+  /* ---- Memory Match: cards left, stats right ---- */
+  body:has(#grid.grid) {
+    display: grid; grid-template-columns: auto minmax(160px, 260px); grid-template-rows: auto auto auto 1fr;
+    column-gap: 28px; justify-content: center; align-content: start; justify-items: center;
+  }
+  body:has(#grid.grid) .topbar { grid-column: 1 / -1; width: 100%; }
+  body:has(#grid.grid) #grid { grid-column: 1; grid-row: 2 / 5; width: calc(100vh - 64px); width: calc(100dvh - 64px); gap: 6px; margin: 0; }
+  body:has(#grid.grid) .stats { grid-column: 2; grid-row: 2; flex-direction: column; align-items: center; gap: 0.3em; margin-top: 1em; }
+  body:has(#grid.grid) .turn-banner { grid-column: 2; grid-row: 3; }
+
+  /* ---- Whack-a-Mole: holes left, score/time right ---- */
+  body:has(#field-wrap) {
+    display: grid; grid-template-columns: auto minmax(120px, 220px); grid-template-rows: auto auto 1fr;
+    column-gap: 20px; justify-content: center; align-content: start; justify-items: center; height: 100vh; height: 100dvh;
+  }
+  body:has(#field-wrap) .topbar { grid-column: 1 / -1; width: 100%; }
+  body:has(#field-wrap) #field-wrap { grid-column: 1; grid-row: 2 / 4; }
+  body:has(#field-wrap) .stats { grid-column: 2; grid-row: 2; flex-direction: column; align-items: center; gap: 0.3em; margin-top: 1em; }
+  body:has(#field-wrap) .field.solo { width: calc(100vh - 70px); width: calc(100dvh - 70px); }
+  body:has(#field-wrap) .field:not(.solo) { width: min(36vw, calc(100vh - 96px)); width: min(36vw, calc(100dvh - 96px)); gap: 6px; }
+
+  /* ---- Penalty Shootout: pitch left, aim controls right ---- */
+  body:has(#aim-grid) {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto auto 1fr;
+    column-gap: 12px; height: 100vh; height: 100dvh; padding: 0 8px 0 4px; align-items: start;
+  }
+  body:has(#aim-grid) .topbar { grid-column: 1 / -1; }
+  body:has(#aim-grid) .game-wrap { grid-column: 1; grid-row: 2 / 6; height: 100%; min-height: 0; padding: 2px; }
+  body:has(#aim-grid) .stats { grid-column: 2; grid-row: 2; flex-direction: column; align-items: center; gap: 0.1em; font-size: 1.1rem; margin: 0; }
+  body:has(#aim-grid) .message { grid-column: 2; grid-row: 3; font-size: 1.05rem; margin: 0.2em 0; max-width: 220px; }
+  body:has(#aim-grid) .confuse-row { grid-column: 2; grid-row: 4; margin: 0.2em 0; }
+  body:has(#aim-grid) .controls-row { grid-column: 2; grid-row: 5; flex-direction: column; align-items: center; gap: 0.4em; flex-wrap: nowrap; }
+  body:has(#aim-grid) .aim-grid { width: 180px; gap: 4px; }
+  body:has(#aim-grid) .aim-grid button { padding: 0.3em 0; font-size: 1.1rem; }
+
+  /* ---- Rock Paper Scissors: arena left, buttons right ---- */
+  body:has(#arena-wrap) {
+    display: grid; grid-template-columns: auto minmax(150px, 240px); grid-template-rows: auto auto auto auto 1fr;
+    column-gap: 16px; justify-content: center; align-content: start; justify-items: center; min-height: 0;
+  }
+  body:has(#arena-wrap) .topbar { grid-column: 1 / -1; width: 100%; }
+  body:has(#arena-wrap) #arena-wrap { grid-column: 1; grid-row: 2 / 6; height: calc(100vh - 64px); height: calc(100dvh - 64px); width: min(60vw, calc((100vh - 64px) * 1.87)); width: min(60vw, calc((100dvh - 64px) * 1.87)); margin: 0; }
+  body:has(#arena-wrap) .stats { grid-column: 2; grid-row: 2; flex-direction: column; align-items: center; gap: 0.1em; margin-top: 0.4em; }
+  body:has(#arena-wrap) .message { grid-column: 2; grid-row: 3; font-size: 1.1rem; }
+  body:has(#arena-wrap) .choice-grid { grid-column: 2; grid-row: 4; gap: 0.5em; }
+  body:has(#arena-wrap) .choice-btn { font-size: 1.5rem; padding: 0.35em 0.7em; }
+
+  /* ---- Pong: up/down buttons at the screen edges so the table gets the height ---- */
+  body:has(#p1-up) { height: 100vh; height: 100dvh; min-height: 0; }
+  body:has(#p1-up) .stats { margin: 0; font-size: 1.2rem; }
+  body:has(#p1-up) .game-wrap { flex: 1 1 0; min-height: 0; padding: 2px; }
+  body:has(#p1-up) .controls-row { position: fixed; left: 0; right: 0; bottom: 14px; width: 100%; padding: 0 6px; pointer-events: none; z-index: 40; }
+  body:has(#p1-up) .ctrl-group { pointer-events: auto; }
+  body:has(#p1-up) .ctrl-btn { width: 50px; height: 50px; }
+
+  /* ---- Tower Defense: map left, towers + controls right ---- */
+  body:has(#towers) #wrap {
+    display: grid; grid-template-columns: auto 220px; grid-template-rows: auto auto auto 1fr;
+    width: auto; gap: 6px; align-items: start; margin-top: 2px;
+  }
+  body:has(#towers) #game { grid-column: 1; grid-row: 1 / 5; width: min(calc(100vw - 250px), calc((100vh - 50px) * 1.6667)); width: min(calc(100vw - 250px), calc((100dvh - 50px) * 1.6667)); }
+  body:has(#towers) #stats { grid-column: 2; grid-row: 1; }
+  body:has(#towers) #towers { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(3, 1fr); }
+  body:has(#towers) #panel { grid-column: 2; grid-row: 3; }
+  body:has(#towers) #controls { grid-column: 2; grid-row: 4; flex-wrap: wrap; }
+  body:has(#towers) #controls .cbtn.go { flex-basis: 100%; }
+
+  /* ---- Fishing Frenzy: sea left, coins/shop/fishdex right ---- */
+  body:has(#coins) #wrap {
+    display: grid; grid-template-columns: auto 190px; grid-template-rows: auto 1fr;
+    width: auto; gap: 8px; align-items: start; margin-top: 2px;
+  }
+  body:has(#coins) #game { grid-column: 1; grid-row: 1 / 3; width: min(calc(100vw - 220px), calc((100vh - 50px) * 1.6)); width: min(calc(100vw - 220px), calc((100dvh - 50px) * 1.6)); }
+  body:has(#coins) #bar { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; }
+  body:has(#coins) #coins { flex: none; font-size: 0.5rem; line-height: 1.8; }
+  body:has(#coins) #hint { grid-column: 2; grid-row: 2; text-align: left; }
+}

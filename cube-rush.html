@@ -37,6 +37,7 @@ body { display:flex; flex-direction:column; min-height:100vh; overflow:hidden; a
 .btn { font-family:inherit; font-size:0.7rem; background:#00e5ff; color:#000; border:none; border-radius:3px; padding:0.9em 1.6em; cursor:pointer; box-shadow:0 4px 0 #00707d; margin:0.4em; }
 .stat { font-size:clamp(0.55rem,1.6vw,0.75rem); color:#ffea00; margin:0.4em 0; }
 </style>
+<link rel="stylesheet" href="landscape.css?v=1" />
 </head>
 <body>
 <div class="topbar">
@@ -279,8 +280,13 @@ const keys = new Set();
 let pointerHeld = false;
 const isHeld = () => keys.size > 0 || pointerHeld;
 
+function chromeHeight() {
+  const credit = document.querySelector('.credit');
+  const creditH = credit && getComputedStyle(credit).position !== 'fixed' ? credit.offsetHeight : 0;
+  return document.querySelector('.topbar').offsetHeight + creditH + 20;
+}
 function fitCanvas() {
-  const s = Math.min((window.innerWidth - 16) / W, (window.innerHeight - 110) / H);
+  const s = Math.min((window.innerWidth - 16) / W, (window.innerHeight - chromeHeight()) / H);
   cv.style.width = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';
 }
