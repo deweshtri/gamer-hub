@@ -21,6 +21,9 @@ All games use a retro arcade style (Press Start 2P / VT323 fonts, dark neon pale
 ## Pause / resume (all games)
 Every game page loads `pause.js` as the first script in `<head>` (`<script src="pause.js"></script>` right after `<meta charset>`). It adds a ❚❚ PAUSE button (replaces the topbar `.spacer`, or floats top-right if there's no topbar), a P key toggle (Esc/P to resume), and auto-pauses when the tab is hidden. It works by freezing time globally (rAF, setTimeout/setInterval, performance.now, Date.now, Web Audio) and blocking game input while paused — so games need no per-game pause code. **Any new game must include it the same way.**
 
+## Background music
+Every game except Cube Rush (which has its own beat-synced level music) loads `music.js` right after `pause.js`: `<script src="music.js?v=1" data-theme="<theme>"></script>`. It synthesizes a themed chiptune loop with Web Audio (no audio files) — themes live in the `THEMES` table (bpm, key, scale, chord progression, drum/bass/arp patterns). It starts on the first tap/key (autoplay rules), adds a ♪ ON/OFF button left of PAUSE (preference saved in `localStorage` key `gamerhub_music`), and pause.js freezes it automatically. New games should pick or add a theme.
+
 ## Landscape (phones / tablets sideways)
 Every game page links `landscape.css` as the **last** stylesheet before `</head>`. Its rules only apply under `@media (orientation: landscape) and (max-height: 600px)`: compact topbar, smaller pause button, credit moved to a fixed bottom-left corner, and per-game side-by-side layouts (board/canvas left, info/controls right) scoped with `body:has(<unique element>)`. Layout only — no gameplay changes. New games must link it and add a scoped block if their layout overflows at ~844×390.
 
