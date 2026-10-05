@@ -37,6 +37,8 @@ body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:
 .item .pips { color:var(--yel); letter-spacing:3px; }
 .item .ef { color:#cfe3ff; font-size:1rem; min-height:2.4em; line-height:1.15; margin:4px 0; }
 .item .b { width:100%; margin:4px 0 0; padding:0.8em 0.4em; }
+#fire-btn { display:none; position:fixed; right:18px; bottom:22px; width:86px; height:86px; border-radius:50%; z-index:30; font-family:'Press Start 2P',monospace; font-size:0.7rem; color:#fff; background:rgba(255,46,99,0.75); border:3px solid #fff; box-shadow:0 0 18px rgba(255,46,99,0.7); touch-action:none; -webkit-user-select:none; user-select:none; }
+#fire-btn:active { background:#ff2e63; transform:scale(0.95); }
 </style>
 <link rel="stylesheet" href="landscape.css?v=1" />
 </head>
@@ -48,6 +50,7 @@ body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:
 </div>
 <div class="game-wrap"><canvas id="game" width="720" height="540"></canvas></div>
 <div class="credit">MADE BY ATHARV TRIPATHI</div>
+<button id="fire-btn" type="button">FIRE</button>
 
 <div class="overlay" id="menu">
   <h2>🚀 ASTRO<br/>BLASTER</h2>
@@ -59,8 +62,8 @@ body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:
     <button class="b yel" id="b-hangar">🔧 HANGAR</button>
   </div>
   <div class="hints">
-    MOVE: WASD / arrow keys · or drag anywhere on the screen<br/>
-    SHOOT: click / hold the mouse button (or SPACE) · phones: touch &amp; hold<br/>
+    COMPUTER: move with the mouse (or WASD / arrows) · CLICK to shoot (or hold SPACE)<br/>
+    PHONE / TABLET: drag anywhere to fly · hold the FIRE button to shoot<br/>
     Boss every 5th wave<br/>
     Power-ups: ⚡ rapid fire · ✳ triple shot · 🛡 shield · ❤ repair
   </div>
@@ -294,14 +297,20 @@ function update(dt) {
   if (keys.has('ArrowUp') || keys.has('KeyW')) my -= 1;
   if (keys.has('ArrowDown') || keys.has('KeyS')) my += 1;
   const len = Math.hypot(mx, my) || 1;
+  if (mx || my) mouseTarget = null;
   p.x += mx / len * G.speed * dt; p.y += my / len * G.speed * dt;
+  if (mouseTarget) {
+    const dx = mouseTarget.x - p.x, dy = mouseTarget.y - p.y, d = Math.hypot(dx, dy), step = G.speed * 1.6 * dt;
+    if (d > 1) { p.x += dx / d * Math.min(d, step); p.y += dy / d * Math.min(d, step); }
+  }
   if (dragDX || dragDY) { p.x += dragDX; p.y += dragDY; dragDX = dragDY = 0; }
   p.x = Math.max(18, Math.min(W - 18, p.x)); p.y = Math.max(H * 0.25, Math.min(H - 22, p.y));
   p.inv = Math.max(0, p.inv - dt); p.rapid = Math.max(0, p.rapid - dt); p.triple = Math.max(0, p.triple - dt);
 
-  // fire only while the mouse/finger is held down or Space is pressed
+  // Shooting is never automatic: one volley per mouse click, or while SPACE / the touch FIRE button is held.
   p.cd = Math.max(0, p.cd - dt);
-  if (p.cd <= 0 && (dragId !== null || keys.has('Space')) && G.phase !== 'intro') {
+  if (p.cd <= 0 && (fireQueued || keys.has('Space') || touchFire) && G.phase !== 'intro') {
+    fireQueued = false;
     p.cd = G.delay * (p.rapid > 0 ? 0.5 : 1);
     const n = Math.min(7, G.beams + (p.triple > 0 ? 2 : 0));
     for (let i = 0; i < n; i++) {
@@ -564,18 +573,27 @@ window.addEventListener('keydown', e => {
   keys.add(e.code);
 });
 window.addEventListener('keyup', e => keys.delete(e.code));
-window.addEventListener('blur', () => { keys.clear(); dragId = null; });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); dragId = null; } });
+const resetInput = () => { keys.clear(); dragId = null; touchFire = false; fireQueued = false; };
+window.addEventListener('blur', resetInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) resetInput(); });
 
-// Drag anywhere: the ship moves by the same amount your finger/mouse moves (no need to touch the ship itself).
-let dragId = null, lastPt = null, dragDX = 0, dragDY = 0;
+// Mouse: the ship follows the pointer (no button needed) and each left click fires one volley.
+// Touch: drag anywhere to steer (never fires); shoot with the on-screen FIRE button.
+let dragId = null, lastPt = null, dragDX = 0, dragDY = 0, mouseTarget = null, fireQueued = false, touchFire = false;
+const isUI = e => e.target.closest('button,a,.overlay,#gh-pause-btn,#gh-music-btn,#fire-btn');
 window.addEventListener('pointerdown', e => {
-  if (state !== 'play' || e.button !== 0 || e.target.closest('button,a,.overlay,#gh-pause-btn,#gh-music-btn')) return;
+  if (state !== 'play' || isUI(e)) return;
+  if (e.pointerType === 'mouse') { if (e.button === 0) fireQueued = true; return; }
   dragId = e.pointerId; lastPt = { x: e.clientX, y: e.clientY };
 });
 window.addEventListener('pointermove', e => {
-  if (e.pointerId !== dragId || state !== 'play') return;
-  if (e.pointerType === 'mouse' && e.buttons === 0) { dragId = null; return; }
+  if (state !== 'play') return;
+  if (e.pointerType === 'mouse') {
+    const r = cv.getBoundingClientRect();
+    mouseTarget = { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+    return;
+  }
+  if (e.pointerId !== dragId) return;
   const scale = W / cv.getBoundingClientRect().width * 1.15;
   dragDX += (e.clientX - lastPt.x) * scale; dragDY += (e.clientY - lastPt.y) * scale;
   lastPt = { x: e.clientX, y: e.clientY };
@@ -584,6 +602,12 @@ window.addEventListener('pointermove', e => {
 const endDrag = e => { if (e.pointerId === dragId) dragId = null; };
 window.addEventListener('pointerup', endDrag);
 window.addEventListener('pointercancel', endDrag);
+
+const fireBtn = $('fire-btn');
+const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+fireBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); touchFire = true; });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) fireBtn.addEventListener(ev, () => { touchFire = false; });
+setInterval(() => { fireBtn.style.display = hasTouch && state === 'play' ? 'block' : 'none'; }, 200);
 document.addEventListener('touchmove', e => { if (state === 'play') e.preventDefault(); }, { passive: false });
 
 let last = performance.now();
