@@ -474,7 +474,15 @@ function draw() {
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = 'rgba(166,77,255,0.08)'; ctx.beginPath(); ctx.arc(560, 140 + Math.sin(time * 0.1) * 10, 160, 0, 7); ctx.fill();
   ctx.fillStyle = 'rgba(0,229,255,0.06)'; ctx.beginPath(); ctx.arc(140, 380, 200, 0, 7); ctx.fill();
-  stars.forEach((layer, l) => { ctx.fillStyle = ['#4a4a7a', '#9a9ad0', '#ffffff'][l]; for (const s of layer) ctx.fillRect(Math.round(s.x), Math.round(s.y), s.s, s.s * (l === 2 && state === 'play' ? 3 : 1)); });
+  // Stars are small dim dots (never streaks) so they can't be mistaken for laser shots.
+  stars.forEach((layer, l) => {
+    for (const s of layer) {
+      ctx.globalAlpha = [0.35, 0.55, 0.75][l] * (0.7 + 0.3 * Math.sin(time * 3 + s.x));
+      ctx.fillStyle = ['#6a6aa8', '#b0b0e0', '#e8e8ff'][l];
+      ctx.fillRect(Math.round(s.x), Math.round(s.y), Math.min(2, s.s), Math.min(2, s.s));
+    }
+  });
+  ctx.globalAlpha = 1;
   if (!G) return;
 
   ctx.save();
@@ -488,8 +496,9 @@ function draw() {
     else { ctx.font = '18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText({ rapid: '⚡', triple: '✳️', shield: '🛡️', repair: '❤️' }[d.kind], d.x, d.y + 6); }
   }
   for (const f of G.foes) drawFoe(f);
-  ctx.fillStyle = '#00e5ff';
-  for (const s of G.shots) { ctx.fillRect(s.x - 1.5, s.y - 8, 3, 14); }
+  ctx.save(); ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 10; ctx.fillStyle = '#00e5ff';
+  for (const s of G.shots) { ctx.fillRect(s.x - 2, s.y - 9, 4, 16); }
+  ctx.restore();
   for (const s of G.eshots) { ctx.fillStyle = s.r > 5 ? '#ff2e63' : '#ff9f1c'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(s.x - 1, s.y - 1, 2, 2); }
   if (state === 'play' || state === 'over' && G.p.hp > 0) drawShip(G.p.x, G.p.y);
   for (const q of G.parts) {
