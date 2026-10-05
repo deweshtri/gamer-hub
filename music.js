@@ -27,6 +27,7 @@
     cyber:   { bpm: 124, root: 53, scale: 'minor', prog: [[0, 'm'], [0, 'm'], [8, 'M'], [7, 'm']], k: 'x...x...x...x...', s: '....x.......x...', h: '..x...x...x.x.x.', bass: 'r.rr.r.rr.r.rr.r', arp: '0.0.1.0.2.0.1.0.', lead: 'triangle', arpW: 'square', dens: 0.25 },
     space:   { bpm: 136, root: 55, scale: 'minor', prog: [[0, 'm'], [8, 'M'], [3, 'M'], [10, 'M']], k: 'x...x...x...x...', s: '....x.......x...', h: '..x...x...x.x.x.', bass: 'r.ror.ror.ror.ro', arp: '0121312101213121', lead: 'sawtooth', arpW: 'square', dens: 0.45 },
     dungeon: { bpm: 96, root: 50, scale: 'harmMinor', prog: [[0, 'm'], [8, 'M'], [5, 'm'], [7, 'M']], k: 'x.......x..x....', s: '........x.......', h: '..x.......x.....', bass: 'r...r...o...r...', arp: '0.1.2.1.0.1.2.3.', lead: 'triangle', arpW: 'triangle', dens: 0.3, pad: true },
+    island:  { bpm: 104, root: 55, scale: 'dorian', prog: [[0, 'm'], [5, 'M'], [10, 'M'], [7, 'm']], k: 'x.....x...x.....', s: '....x.......x...', h: '..x.x...x.x...x.', bass: 'r..r..o.r..r..5.', arp: '0.2.1.2.0.2.1.3.', lead: 'triangle', arpW: 'triangle', dens: 0.35, pad: true },
     fishing: { bpm: 92, root: 62, scale: 'majPent', prog: [[0, 'M'], [5, 'M'], [9, 'm'], [7, 'M']], k: 'x.......x.......', s: '................', h: '....x.......x...', bass: 'r.....o.r.....o.', arp: '0.1.2.1.0.1.2.1.', lead: 'triangle', arpW: 'triangle', dens: 0.35, pad: true },
   };
   const T = THEMES[theme] || THEMES.sky;

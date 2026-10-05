@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<script src="pause.js?v=2"></script>
+<script src="music.js?v=4" data-theme="island"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"/>
+<title>Gamer Hub - Island Survivor</title>
+<meta name="description" content="Island Survivor - a hard retro survival game. Gather wood, stone and food, build walls, campfires and traps, and survive 10 increasingly dangerous nights. Made by Atharv Tripathi."/>
+<link rel="stylesheet" href="style.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet"/>
+<style>
+:root { --sea:#1fb5d6; --sand:#f2d48a; --leaf:#39d98a; --sun:#ffcc33; --night:#2a2f6a; --panel:#0d1a1f; --line:#24525e; --red:#ff3355; }
+body { display:flex; flex-direction:column; min-height:100vh; overflow:hidden; align-items:center; background:#03080b; color:#e8f6f0; font-family:'VT323',monospace; font-size:20px; user-select:none; -webkit-user-select:none; }
+body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:9000; background:repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0 1px, transparent 1px 3px); }
+.topbar h1 { font-family:'Press Start 2P',monospace; font-size:clamp(0.7rem,2.5vw,1.05rem); letter-spacing:3px; color:var(--leaf); text-shadow:0 0 10px var(--leaf),3px 3px 0 #000; }
+.topbar .back-link { font-family:'Press Start 2P',monospace; font-size:0.6rem; background:rgba(57,217,138,0.08); color:var(--leaf); border:2px solid var(--leaf); border-radius:0; box-shadow:3px 3px 0 #000; }
+.credit { color:var(--sun); font-family:'Press Start 2P',monospace; font-size:0.55rem; opacity:0.7; letter-spacing:1px; padding:0.4em 0; }
+#wrap { display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; width:100%; padding:0.3em; }
+#game { display:block; image-rendering:pixelated; box-shadow:0 0 26px rgba(31,181,214,0.3),6px 6px 0 #000; touch-action:none; cursor:crosshair; }
+#bar { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; max-width:820px; }
+.bb { font-family:'VT323',monospace; font-size:1.05rem; line-height:1.05; background:var(--panel); color:#fff; border:2px solid var(--line); padding:5px 8px; cursor:pointer; box-shadow:3px 3px 0 #000; min-width:84px; }
+.bb b { display:block; font-family:'Press Start 2P',monospace; font-size:0.5rem; color:var(--leaf); margin-bottom:3px; font-weight:normal; }
+.bb.sel { border-color:var(--sun); box-shadow:0 0 12px rgba(255,204,51,0.6),3px 3px 0 #000; }
+.bb.poor { opacity:0.4; }
+.bb.done { border-color:var(--leaf); opacity:0.55; }
+#joy { display:none; position:fixed; left:18px; bottom:20px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.35); z-index:30; touch-action:none; }
+#knob { position:absolute; left:40px; top:40px; width:40px; height:40px; border-radius:50%; background:rgba(57,217,138,0.7); border:2px solid #fff; }
+#tbtns { display:none; position:fixed; right:16px; bottom:22px; z-index:30; gap:8px; align-items:flex-end; }
+#tbtns button { font-family:'Press Start 2P',monospace; font-size:0.55rem; border-radius:50%; color:#fff; border:3px solid #fff; touch-action:none; }
+#t-act { width:82px; height:82px; background:rgba(255,51,85,0.75); }
+#t-eat { width:58px; height:58px; background:rgba(57,217,138,0.6); }
+body.touch #joy { display:block; }
+body.touch #tbtns { display:flex; }
+.overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(2,6,8,0.94); text-align:center; padding:1em; z-index:40; overflow-y:auto; }
+.overlay.hidden { display:none; }
+.overlay h2 { font-family:'Press Start 2P',monospace; font-size:clamp(1rem,4vw,1.9rem); color:var(--leaf); text-shadow:0 0 16px var(--leaf),4px 4px 0 #000; margin:0 0 0.4em; line-height:1.5; }
+.sub { color:#a9cfc4; margin:0 0 0.8em; max-width:640px; line-height:1.2; }
+.stat { font-family:'Press Start 2P',monospace; font-size:clamp(0.55rem,1.8vw,0.72rem); color:var(--sun); margin:0.35em 0; line-height:1.7; }
+.b { font-family:'Press Start 2P',monospace; font-size:clamp(0.55rem,1.8vw,0.7rem); background:var(--panel); color:#fff; border:2px solid var(--leaf); padding:1em 1.3em; cursor:pointer; box-shadow:4px 4px 0 #000; margin:0.3em; }
+.hints { font-size:1rem; color:#6f948a; margin-top:0.8em; line-height:1.4; max-width:680px; }
+@media (orientation: landscape) and (max-height: 600px) {
+  #wrap { flex-direction:row; align-items:flex-start; justify-content:center; }
+  #bar { display:grid; grid-template-columns:repeat(2, auto); gap:4px; align-content:start; max-width:none; }
+  .bb { min-width:76px; padding:3px 5px; font-size:0.9rem; }
+  .bb b { font-size:0.42rem; }
+}
+</style>
+<link rel="stylesheet" href="landscape.css?v=1" />
+</head>
+<body>
+<div class="topbar">
+  <a class="back-link" href="index.html">← HUB</a>
+  <h1>ISLAND SURVIVOR</h1>
+  <span class="spacer"></span>
+</div>
+<div id="wrap">
+  <canvas id="game" width="800" height="480"></canvas>
+  <div id="bar"></div>
+</div>
+<div class="credit">MADE BY ATHARV TRIPATHI</div>
+<div id="joy"><div id="knob"></div></div>
+<div id="tbtns"><button id="t-eat">EAT</button><button id="t-act">ACT</button></div>
+
+<div class="overlay" id="menu">
+  <h2>🏝️ ISLAND<br/>SURVIVOR</h2>
+  <p class="sub">You've washed up on a wild island. Gather wood, stone and berries by day. Build walls, campfires and spike traps before dark — every night the monsters come in bigger waves. Survive 10 nights until the rescue ship arrives.</p>
+  <div class="stat" id="m-stats"></div>
+  <button class="b" id="b-play">▶ START SURVIVING</button>
+  <div class="hints">
+    MOVE: WASD / arrows · ACTION (gather / attack): SPACE or J · EAT: E<br/>
+    BUILD: pick an item below (or keys 1-4), then click a nearby tile — or press F to place it in front of you<br/>
+    Campfires heal you, light the dark and burn monsters that get close. Refuel a fire with ACTION (2 wood).<br/>
+    Phones: joystick to move · ACT button · tap an item, then tap a tile
+  </div>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="o-title">YOU DIDN'T SURVIVE</h2>
+  <div class="stat" id="o-detail"></div>
+  <button class="b" id="o-retry">↻ TRY AGAIN</button>
+</div>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const TS = 32, MW = 44, MH = 34, W = 800, H = 480, VW = W / TS, VH = H / TS, WIN_NIGHTS = 10;
+const DAY_LEN = 75, SAVE_KEY = 'gamerhub_island';
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const nightLen = n => 48 + n * 3;
+
+function chromeHeight() {
+  const credit = document.querySelector('.credit');
+  const creditH = credit && getComputedStyle(credit).position !== 'fixed' ? credit.offsetHeight : 0;
+  const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+  return document.querySelector('.topbar').offsetHeight + creditH + (landscape ? 14 : $('bar').offsetHeight + 24);
+}
+function fitCanvas() {
+  const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+  const maxW = window.innerWidth - (landscape ? 210 : 12);
+  const s = Math.min(maxW / W, (window.innerHeight - chromeHeight()) / H);
+  cv.style.width = Math.floor(W * s) + 'px';
+  cv.style.height = Math.floor(H * s) + 'px';
+}
+window.addEventListener('resize', fitCanvas);
+
+let best = { nights: 0, wins: 0 };
+try { best = Object.assign(best, JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) {}
+function saveBest() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(best)); } catch (e) {} }
+
+// ---------- data ----------
+const RES = {
+  tree:  { hp: 4, give: { wood: 3 }, tile: 2 },
+  palm:  { hp: 3, give: { wood: 2, food: 1 }, tile: 1 },
+  rock:  { hp: 5, give: { stone: 2 }, tile: 2 },
+  bush:  { hp: 1, give: { food: 2 }, tile: 2 },
+};
+const BUILD = [
+  { id: 'wall',  name: 'WOOD WALL',  cost: { wood: 4 }, hp: 70, desc: 'blocks monsters' },
+  { id: 'swall', name: 'STONE WALL', cost: { stone: 4, wood: 1 }, hp: 190, desc: 'very tough' },
+  { id: 'fire',  name: 'CAMPFIRE',   cost: { wood: 6 }, hp: 60, desc: 'light, heal, burn' },
+  { id: 'spike', name: 'SPIKES',     cost: { wood: 3, stone: 2 }, hp: 12, desc: 'hurts walkers' },
+];
+const CRAFT = [
+  { id: 'axe',   name: 'STONE AXE', cost: { wood: 5, stone: 3 }, desc: 'gather x2' },
+  { id: 'spear', name: 'SPEAR',     cost: { wood: 6, stone: 5 }, desc: 'damage x2.5' },
+  { id: 'torch', name: 'TORCH',     cost: { wood: 4 }, desc: 'see further' },
+];
+const FOES = {
+  crab:    { night: 1, hp: 22,  speed: 62,  dmg: 6,  wall: 5,  r: 10, color: '#ff5a3c', score: 1 },
+  wolf:    { night: 2, hp: 38,  speed: 108, dmg: 9,  wall: 7,  r: 11, color: '#9aa4b0', score: 2 },
+  stalker: { night: 4, hp: 48,  speed: 128, dmg: 12, wall: 9,  r: 11, color: '#a64dff', score: 3 },
+  brute:   { night: 7, hp: 130, speed: 54,  dmg: 22, wall: 32, r: 15, color: '#3f7a3a', score: 6 },
+};
+const ICON = { wood: '🪵', stone: '🪨', food: '🍓' };
+const costText = c => Object.entries(c).map(([k, v]) => v + ICON[k]).join(' ');
+
+// ---------- state ----------
+let state = 'menu', G = null, time = 0;
+const keys = new Set();
+const idx = (x, y) => y * MW + x;
+const tileOf = v => Math.floor(v / TS);
+const land = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH && G.tiles[idx(x, y)] > 0;
+const resAt = (x, y) => { const r = G.res.get(idx(x, y)); return r && !r.dead ? r : null; };
+const buildAt = (x, y) => G.builds.get(idx(x, y)) || null;
+const blocks = b => b && (b.type === 'wall' || b.type === 'swall' || b.type === 'fire');
+const walkable = (x, y) => land(x, y) && !resAt(x, y) && !blocks(buildAt(x, y));
+
+function genIsland() {
+  const tiles = new Uint8Array(MW * MH), cx = MW / 2, cy = MH / 2;
+  const a = rnd(0, 6), b = rnd(0, 6), c = rnd(0, 6);
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const n = Math.sin(x * 0.35 + a) * 0.08 + Math.sin(y * 0.3 + b) * 0.08 + Math.sin((x + y) * 0.21 + c) * 0.07 + rnd(-0.03, 0.03);
+    const d = Math.hypot((x - cx) / (MW * 0.42), (y - cy) / (MH * 0.42)) + n;
+    if (x < 2 || y < 2 || x >= MW - 2 || y >= MH - 2) continue;
+    tiles[idx(x, y)] = d < 0.66 ? 2 : d < 0.8 ? 1 : 0;
+  }
+  // keep only the island connected to the centre
+  const keep = new Uint8Array(MW * MH), q = [[cx | 0, cy | 0]];
+  keep[idx(cx | 0, cy | 0)] = 1;
+  for (let i = 0; i < q.length; i++) {
+    const [x, y] = q[i];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy, k = idx(nx, ny);
+      if (tiles[k] && !keep[k]) { keep[k] = 1; q.push([nx, ny]); }
+    }
+  }
+  for (let k = 0; k < tiles.length; k++) if (!keep[k]) tiles[k] = 0;
+  tiles[idx(cx | 0, cy | 0)] = 2;
+  return tiles;
+}
+
+function newGame() {
+  G = {
+    tiles: genIsland(), res: new Map(), builds: new Map(), foes: [], parts: [], texts: [],
+    p: { x: (MW / 2 | 0) * TS + TS / 2, y: (MH / 2 | 0) * TS + TS / 2, hp: 100, hunger: 100, fx: 0, fy: 1, cd: 0, flash: 0,
+         inv: { wood: 6, stone: 0, food: 3 }, tools: {} },
+    day: 1, phase: 'day', t: 0, spawnLeft: 0, spawnT: 0, flowT: 0, sel: -1, kills: 0, banner: { text: 'DAY 1 — gather and build!', color: '#ffcc33', t: 3 },
+  };
+  const cx = MW / 2 | 0, cy = MH / 2 | 0, spots = [];
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (G.tiles[idx(x, y)] && Math.hypot(x - cx, y - cy) > 2.5) spots.push([x, y]);
+  for (let i = spots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [spots[i], spots[j]] = [spots[j], spots[i]]; }
+  const want = { tree: 75, rock: 28, bush: 26, palm: 22 };
+  for (const [x, y] of spots) {
+    const t = G.tiles[idx(x, y)];
+    const type = t === 1 ? (want.palm > 0 && Math.random() < 0.3 ? 'palm' : null) : ['tree', 'tree', 'rock', 'bush'].find(k => want[k] > 0 && Math.random() < 0.35);
+    if (!type) continue;
+    want[type]--;
+    G.res.set(idx(x, y), { type, hp: RES[type].hp, dead: false, regrow: 0 });
+  }
+  computeFlow();
+}
+
+// ---------- flow fields (monster pathing) ----------
+function bfs(passable) {
+  const d = new Int16Array(MW * MH).fill(-1), sx = tileOf(G.p.x), sy = tileOf(G.p.y), q = [[sx, sy]];
+  d[idx(sx, sy)] = 0;
+  for (let i = 0; i < q.length; i++) {
+    const [x, y] = q[i];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (!land(nx, ny) || d[idx(nx, ny)] >= 0 || !passable(nx, ny)) continue;
+      d[idx(nx, ny)] = d[idx(x, y)] + 1; q.push([nx, ny]);
+    }
+  }
+  return d;
+}
+function computeFlow() {
+  G.flowOpen = bfs(walkable);
+  G.flowWalls = bfs((x, y) => !resAt(x, y));
+}
+
+// ---------- helpers ----------
+function popText(x, y, text, color) { G.texts.push({ x, y, text, color, t: 1 }); }
+function burst(x, y, color, n, spd = 120) {
+  for (let i = 0; i < n; i++) { const a = rnd(0, 6.28), v = rnd(spd * 0.3, spd); G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rnd(0.3, 0.6), color }); }
+}
+const canPay = c => Object.entries(c).every(([k, v]) => G.p.inv[k] >= v);
+const pay = c => { for (const [k, v] of Object.entries(c)) G.p.inv[k] -= v; };
+function blockedAt(px, py, r) {
+  for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!walkable(tileOf(px + ox), tileOf(py + oy))) return true;
+  return false;
+}
+
+// ---------- actions ----------
+function action() {
+  const p = G.p;
+  if (p.cd > 0 || state !== 'play') return;
+  p.cd = 0.33;
+  const ax = p.x + p.fx * 26, ay = p.y + p.fy * 26;
+  // refuel a nearby campfire
+  for (const [k, b] of G.builds) {
+    if (b.type !== 'fire') continue;
+    const bx = (k % MW) * TS + TS / 2, by = Math.floor(k / MW) * TS + TS / 2;
+    if (Math.hypot(bx - ax, by - ay) < 26 && b.fuel < 190) {
+      if (p.inv.wood >= 2) { p.inv.wood -= 2; b.fuel = Math.min(200, b.fuel + 80); popText(bx, by - 10, 'FUEL +', '#ffcc33'); sfx.fire(); }
+      else popText(bx, by - 10, 'NEED 2 WOOD', '#ff3355');
+      return;
+    }
+  }
+  // attack monsters in front
+  let hitFoe = false;
+  for (const f of G.foes) {
+    const dx = f.x - p.x, dy = f.y - p.y, d = Math.hypot(dx, dy);
+    if (d < 50 + f.r && (dx * p.fx + dy * p.fy) / (d || 1) > 0.25) {
+      const dmg = Math.round((p.tools.spear ? 20 : 8) * rnd(0.85, 1.2));
+      f.hp -= dmg; f.flash = 0.1; f.x += dx / (d || 1) * 10; f.y += dy / (d || 1) * 10;
+      popText(f.x, f.y - 14, dmg, '#fff'); hitFoe = true;
+      if (f.hp <= 0) { f.dead = true; G.kills++; burst(f.x, f.y, f.color, 14); sfx.kill(); }
+    }
+  }
+  if (hitFoe) { sfx.hit(); return; }
+  // gather the resource in front
+  let target = null, bd = 34;
+  for (const [k, r] of G.res) {
+    if (r.dead) continue;
+    const rx = (k % MW) * TS + TS / 2, ry = Math.floor(k / MW) * TS + TS / 2, d = Math.hypot(rx - ax, ry - ay);
+    if (d < bd) { bd = d; target = { k, r, rx, ry }; }
+  }
+  if (target) {
+    const { r, rx, ry } = target;
+    r.hp -= p.tools.axe ? 2 : 1;
+    burst(rx, ry, r.type === 'rock' ? '#aab' : r.type === 'bush' ? '#ff3355' : '#8a5a2b', 5, 80);
+    sfx.chop(r.type === 'rock');
+    if (r.hp <= 0) {
+      r.dead = true; r.regrow = G.day + 1 + (r.type === 'rock' ? 1 : 0);
+      for (const [k2, v] of Object.entries(RES[r.type].give)) { p.inv[k2] += v; popText(rx, ry - 12, '+' + v + ICON[k2], '#fff'); }
+      computeFlow();
+    }
+    return;
+  }
+  sfx.swing();
+}
+function eat() {
+  const p = G.p;
+  if (state !== 'play') return;
+  if (!p.inv.food) { popText(p.x, p.y - 26, 'NO FOOD', '#ff3355'); return; }
+  if (p.hunger > 95) return;
+  p.inv.food--; p.hunger = Math.min(100, p.hunger + 30);
+  popText(p.x, p.y - 26, 'YUM +30', '#39d98a'); sfx.eat();
+}
+function placeAt(tx, ty) {
+  const p = G.p, it = BUILD[G.sel];
+  if (!it || state !== 'play') return;
+  const fail = msg => popText(tx * TS + 16, ty * TS + 6, msg, '#ff3355');
+  if (Math.hypot(tx * TS + 16 - p.x, ty * TS + 16 - p.y) > TS * 3.6) return fail('TOO FAR');
+  if (!land(tx, ty) || resAt(tx, ty) || buildAt(tx, ty)) return fail('BLOCKED');
+  if (blocks({ type: it.id }) && (tileOf(p.x) === tx && tileOf(p.y) === ty || G.foes.some(f => tileOf(f.x) === tx && tileOf(f.y) === ty))) return fail('BLOCKED');
+  if (!canPay(it.cost)) return fail('NEED ' + costText(it.cost));
+  pay(it.cost);
+  G.builds.set(idx(tx, ty), { type: it.id, hp: it.hp, maxHp: it.hp, fuel: it.id === 'fire' ? 150 : 0, tick: 0 });
+  burst(tx * TS + 16, ty * TS + 16, '#ffcc33', 8, 70); sfx.build();
+  if (blocks({ type: it.id }) && blockedAt(p.x, p.y, 10)) { G.builds.delete(idx(tx, ty)); pay(Object.fromEntries(Object.entries(it.cost).map(([k, v]) => [k, -v]))); return fail('BLOCKED'); }
+  computeFlow();
+}
+function placeInFront() {
+  const p = G.p;
+  placeAt(tileOf(p.x + p.fx * TS), tileOf(p.y + p.fy * TS));
+}
+function craft(i) {
+  const c = CRAFT[i];
+  if (state !== 'play' || G.p.tools[c.id]) return;
+  if (!canPay(c.cost)) { popText(G.p.x, G.p.y - 26, 'NEED ' + costText(c.cost), '#ff3355'); return; }
+  pay(c.cost); G.p.tools[c.id] = true; sfx.build();
+  popText(G.p.x, G.p.y - 26, c.name + '!', '#ffcc33');
+}
+
+// ---------- day / night ----------
+function nightFoeCount(n) { return 2 + Math.round(n * 2.6); }
+function spawnFoe() {
+  const n = G.day, types = Object.entries(FOES).filter(([, f]) => f.night <= n);
+  const weights = types.map(([, f]) => 1 + (n - f.night >= 0 && f.night >= n - 3 ? 2 : 0));
+  let r = Math.random() * weights.reduce((a, b) => a + b, 0), key = types[0][0];
+  for (let i = 0; i < types.length; i++) { r -= weights[i]; if (r <= 0) { key = types[i][0]; break; } }
+  const shore = [];
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    if (!walkable(x, y) || G.tiles[idx(x, y)] !== 1) continue;
+    if (Math.hypot(x * TS - G.p.x, y * TS - G.p.y) < TS * 9) continue;
+    if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !land(x + dx, y + dy))) shore.push([x, y]);
+  }
+  if (!shore.length) return;
+  const [sx, sy] = pick(shore), d = FOES[key], hp = Math.round(d.hp * (1 + 0.09 * (n - 1)));
+  G.foes.push({ key, x: sx * TS + 16, y: sy * TS + 16, hp, maxHp: hp, speed: d.speed * rnd(0.9, 1.1), dmg: d.dmg, wall: d.wall, r: d.r, color: d.color, cd: 0, flash: 0, spikeT: 0, wob: rnd(0, 6) });
+}
+function startNight() {
+  G.phase = 'night'; G.t = 0; G.spawnLeft = nightFoeCount(G.day); G.spawnT = 2;
+  G.banner = { text: 'NIGHT ' + G.day + ' — they are coming!', color: '#ff3355', t: 3 };
+  sfx.night();
+}
+function startDay() {
+  for (const f of G.foes) burst(f.x, f.y, '#ffcc33', 10);
+  G.foes = [];
+  if (G.day >= WIN_NIGHTS) return endGame(true);
+  G.day++; G.phase = 'day'; G.t = 0;
+  for (const r of G.res.values()) if (r.dead && r.regrow <= G.day) { r.dead = false; r.hp = RES[r.type].hp; }
+  computeFlow();
+  G.banner = { text: 'DAY ' + G.day + ' — you survived!', color: '#ffcc33', t: 3 };
+  best.nights = Math.max(best.nights, G.day - 1); saveBest();
+  sfx.day();
+}
+
+// ---------- update ----------
+function update(dt) {
+  time += dt;
+  if (state !== 'play') return;
+  const p = G.p;
+  G.t += dt;
+  if (G.banner && (G.banner.t -= dt) <= 0) G.banner = null;
+  if (G.phase === 'day' && G.t >= DAY_LEN) startNight();
+  else if (G.phase === 'night') {
+    if (G.spawnLeft > 0 && (G.spawnT -= dt) <= 0) { spawnFoe(); G.spawnLeft--; G.spawnT = nightLen(G.day) * 0.62 / nightFoeCount(G.day); }
+    if (G.t >= nightLen(G.day)) return startDay();
+  }
+
+  // movement
+  let mx = joy.x, my = joy.y;
+  if (keys.has('ArrowLeft') || keys.has('KeyA')) mx -= 1;
+  if (keys.has('ArrowRight') || keys.has('KeyD')) mx += 1;
+  if (keys.has('ArrowUp') || keys.has('KeyW')) my -= 1;
+  if (keys.has('ArrowDown') || keys.has('KeyS')) my += 1;
+  const ml = Math.hypot(mx, my);
+  if (ml > 0.15) {
+    const s = 140 * dt * Math.min(1, ml) / ml;
+    p.fx = mx / ml; p.fy = my / ml;
+    const nx = p.x + mx * s, ny = p.y + my * s;
+    if (!blockedAt(nx, p.y, 10)) p.x = nx;
+    if (!blockedAt(p.x, ny, 10)) p.y = ny;
+    if (tileOf(p.x) !== G.lastTx || tileOf(p.y) !== G.lastTy) { G.lastTx = tileOf(p.x); G.lastTy = tileOf(p.y); computeFlow(); }
+  }
+  p.cd = Math.max(0, p.cd - dt); p.flash = Math.max(0, p.flash - dt);
+  if (keys.has('Space') || keys.has('KeyJ') || actHeld) action();
+
+  // survival stats
+  p.hunger = Math.max(0, p.hunger - dt * 0.75);
+  if (p.hunger <= 0) p.hp -= dt * 2.5;
+  else if (p.hunger > 60) p.hp = Math.min(100, p.hp + dt * 0.35);
+
+  // structures
+  for (const [k, b] of G.builds) {
+    const bx = (k % MW) * TS + 16, by = Math.floor(k / MW) * TS + 16;
+    if (b.type === 'fire' && b.fuel > 0) {
+      b.fuel -= dt;
+      if (Math.hypot(p.x - bx, p.y - by) < TS * 2.6) p.hp = Math.min(100, p.hp + dt * 1.6);
+      for (const f of G.foes) if (Math.hypot(f.x - bx, f.y - by) < TS * 1.4) { f.hp -= dt * 9; if (Math.random() < dt * 4) burst(f.x, f.y, '#ff9f1c', 1, 40); }
+    }
+    if (b.hp <= 0) { G.builds.delete(k); burst(bx, by, '#8a5a2b', 12); sfx.crash(); computeFlow(); }
+  }
+
+  // monsters
+  for (const f of G.foes) {
+    if (f.dead) continue;
+    f.cd = Math.max(0, f.cd - dt); f.flash = Math.max(0, f.flash - dt);
+    const d = Math.hypot(p.x - f.x, p.y - f.y);
+    if (d < f.r + 14) {
+      if (f.cd <= 0) { f.cd = 1; p.hp -= f.dmg; p.flash = 0.15; popText(p.x, p.y - 20, '-' + f.dmg, '#ff3355'); sfx.hurt(); }
+      continue;
+    }
+    const tx = tileOf(f.x), ty = tileOf(f.y);
+    let next = null, attackWall = null;
+    const choose = (field, allowWalls) => {
+      let bestD = field[idx(tx, ty)] >= 0 ? field[idx(tx, ty)] : 9999, pickN = null;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = tx + dx, ny = ty + dy;
+        if (!land(nx, ny)) continue;
+        const dv = field[idx(nx, ny)];
+        if (dv >= 0 && dv < bestD && (allowWalls || walkable(nx, ny))) { bestD = dv; pickN = [nx, ny]; }
+      }
+      return pickN;
+    };
+    if (G.flowOpen[idx(tx, ty)] >= 0) next = choose(G.flowOpen, false);
+    else { next = choose(G.flowWalls, true); if (next && blocks(buildAt(...next))) attackWall = buildAt(...next); }
+    if (attackWall) {
+      if (f.cd <= 0) { f.cd = 1; attackWall.hp -= f.wall; burst(next[0] * TS + 16, next[1] * TS + 16, '#c9a27a', 3, 60); sfx.thud(); }
+    } else {
+      const gx = next ? next[0] * TS + 16 : p.x, gy = next ? next[1] * TS + 16 : p.y;
+      const aimX = d < TS * 1.5 ? p.x : gx, aimY = d < TS * 1.5 ? p.y : gy;
+      const dd = Math.hypot(aimX - f.x, aimY - f.y) || 1;
+      f.x += (aimX - f.x) / dd * f.speed * dt; f.y += (aimY - f.y) / dd * f.speed * dt;
+    }
+    const sp = buildAt(tileOf(f.x), tileOf(f.y));
+    if (sp && sp.type === 'spike' && (f.spikeT -= dt) <= 0) { f.spikeT = 0.7; f.hp -= 14; sp.hp--; f.flash = 0.1; }
+    if (f.hp <= 0) { f.dead = true; G.kills++; burst(f.x, f.y, f.color, 14); sfx.kill(); }
+  }
+  G.foes = G.foes.filter(f => !f.dead);
+
+  for (const q of G.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt; }
+  G.parts = G.parts.filter(q => q.life > 0);
+  for (const t of G.texts) { t.t -= dt; t.y -= 24 * dt; }
+  G.texts = G.texts.filter(t => t.t > 0);
+  if (p.hp <= 0) endGame(false);
+}
+
+function endGame(won) {
+  state = 'over';
+  const survived = won ? WIN_NIGHTS : G.day - 1;
+  best.nights = Math.max(best.nights, survived); if (won) best.wins++; saveBest();
+  $('o-title').textContent = won ? '🚢 RESCUED! YOU SURVIVED' : 'YOU DIDN\'T SURVIVE';
+  $('o-title').style.color = won ? '#39d98a' : '#ff3355';
+  $('o-detail').innerHTML = `Nights survived: ${survived} / ${WIN_NIGHTS}<br/>Monsters defeated: ${G.kills} · Structures standing: ${G.builds.size}<br/>Best: ${best.nights} nights${best.wins ? ' · rescued x' + best.wins : ''}`;
+  won ? sfx.day() : sfx.die();
+  setTimeout(() => { if (state === 'over') $('over').classList.remove('hidden'); }, 900);
+}
+
+// ---------- sound ----------
+let actx = null;
+function ensureAudio() { if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+function beep(freq, dur, type = 'square', vol = 0.05, slide = 0, delay = 0) {
+  if (!actx) return;
+  const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq * slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  chop: rock => beep(rock ? 520 : 180, 0.07, rock ? 'square' : 'triangle', 0.06, 0.7), swing: () => beep(300, 0.05, 'triangle', 0.03, 0.6),
+  hit: () => beep(240, 0.08, 'square', 0.05, 0.5), kill: () => { beep(330, 0.08); beep(200, 0.12, 'square', 0.05, 0.5, 0.06); },
+  hurt: () => beep(140, 0.18, 'sawtooth', 0.07, 0.5), eat: () => [600, 760].forEach((f, i) => beep(f, 0.07, 'triangle', 0.06, 0, i * 0.06)),
+  build: () => [300, 450].forEach((f, i) => beep(f, 0.06, 'square', 0.05, 0, i * 0.05)), fire: () => beep(200, 0.25, 'sawtooth', 0.04, 1.6),
+  thud: () => beep(90, 0.1, 'square', 0.05, 0.6), crash: () => beep(110, 0.3, 'sawtooth', 0.08, 0.4),
+  night: () => [392, 330, 262, 196].forEach((f, i) => beep(f, 0.22, 'triangle', 0.07, 0, i * 0.18)),
+  day: () => [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.14, 'square', 0.05, 0, i * 0.09)),
+  die: () => [330, 262, 196, 131].forEach((f, i) => beep(f, 0.25, 'sawtooth', 0.06, 0, i * 0.18)),
+};
+
+// ---------- drawing ----------
+const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5; return s - Math.floor(s); };
+const dark = document.createElement('canvas'); dark.width = W; dark.height = H;
+const dctx = dark.getContext('2d');
+
+function drawRes(r, sx, sy, x, y) {
+  if (r.type === 'tree') {
+    if (r.dead) { px(sx + 12, sy + 20, 8, 6, '#6b4423'); return; }
+    px(sx + 13, sy + 18, 6, 12, '#6b4423');
+    px(sx + 4, sy + 6, 24, 14, '#1f7a3a'); px(sx + 8, sy + 1, 16, 8, '#2a9a4a'); px(sx + 6, sy + 8, 6, 4, '#3fbf5f');
+  } else if (r.type === 'palm') {
+    if (r.dead) { px(sx + 14, sy + 22, 6, 6, '#8a6a3a'); return; }
+    for (let i = 0; i < 5; i++) px(sx + 13 + i, sy + 26 - i * 5, 5, 5, '#a07a44');
+    px(sx + 6, sy + 2, 22, 4, '#2fae4a'); px(sx + 2, sy + 5, 8, 4, '#2fae4a'); px(sx + 22, sy + 5, 8, 4, '#2fae4a');
+    px(sx + 15, sy + 6, 4, 4, '#6b3a1a');
+  } else if (r.type === 'rock') {
+    if (r.dead) { px(sx + 10, sy + 22, 10, 4, '#777'); return; }
+    px(sx + 5, sy + 12, 22, 16, '#8a8f99'); px(sx + 8, sy + 8, 14, 6, '#a4a9b3'); px(sx + 10, sy + 16, 5, 4, '#6a6f79');
+  } else if (r.type === 'bush') {
+    px(sx + 5, sy + 12, 22, 14, r.dead ? '#3a6a3a' : '#2f8f3f'); px(sx + 9, sy + 8, 14, 6, r.dead ? '#3a6a3a' : '#39a84a');
+    if (!r.dead) for (const [bx, by] of [[9, 14], [17, 12], [21, 19], [12, 20]]) px(sx + bx, sy + by, 3, 3, '#ff3355');
+  }
+}
+function drawBuild(b, sx, sy) {
+  if (b.type === 'wall') { px(sx + 2, sy + 4, 28, 26, '#8a5a2b'); for (let i = 0; i < 4; i++) px(sx + 3 + i * 7, sy + 4, 2, 26, '#5e3a18'); px(sx + 2, sy + 2, 28, 4, '#b07a44'); }
+  else if (b.type === 'swall') { px(sx + 1, sy + 3, 30, 28, '#7a7f88'); for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) px(sx + 2 + c * 15 + (r % 2 ? 7 : 0) - (r % 2 ? 7 : 0), sy + 4 + r * 7, 13, 5, '#9aa0aa'); }
+  else if (b.type === 'fire') {
+    px(sx + 6, sy + 22, 20, 5, '#6b4423'); px(sx + 9, sy + 18, 14, 5, '#8a5a2b');
+    if (b.fuel > 0) { const f = Math.random() * 4; px(sx + 10, sy + 8 - f, 12, 12 + f, '#ff9f1c'); px(sx + 13, sy + 11 - f, 6, 8 + f, '#ffea00'); }
+    else px(sx + 12, sy + 16, 8, 3, '#555');
+  } else if (b.type === 'spike') { for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { ctx.fillStyle = '#c8ccd2'; ctx.beginPath(); ctx.moveTo(sx + 4 + i * 9, sy + 14 + j * 12); ctx.lineTo(sx + 8 + i * 9, sy + 4 + j * 12); ctx.lineTo(sx + 12 + i * 9, sy + 14 + j * 12); ctx.fill(); } }
+  if (b.hp < b.maxHp && b.type !== 'spike') { px(sx + 3, sy - 3, 26, 3, '#300'); px(sx + 3, sy - 3, 26 * b.hp / b.maxHp, 3, '#ffcc33'); }
+}
+function drawFoe(f, sx, sy) {
+  const c = f.flash > 0 ? '#fff' : f.color, bob = Math.sin(time * 10 + f.wob) * 1.5;
+  if (f.key === 'crab') { px(sx - 9, sy - 4 + bob, 18, 10, c); px(sx - 13, sy - 8, 5, 5, c); px(sx + 8, sy - 8, 5, 5, c); px(sx - 4, sy - 7, 3, 3, '#000'); px(sx + 2, sy - 7, 3, 3, '#000'); }
+  else if (f.key === 'wolf') { px(sx - 11, sy - 5 + bob, 22, 10, c); px(sx + 6, sy - 10 + bob, 8, 8, c); px(sx + 10, sy - 8 + bob, 2, 2, '#ff3355'); px(sx - 9, sy + 5, 3, 5, c); px(sx + 6, sy + 5, 3, 5, c); }
+  else if (f.key === 'stalker') { ctx.globalAlpha = 0.85; px(sx - 9, sy - 14 + bob, 18, 26, c); ctx.globalAlpha = 1; px(sx - 5, sy - 9 + bob, 3, 3, '#00e5ff'); px(sx + 2, sy - 9 + bob, 3, 3, '#00e5ff'); }
+  else if (f.key === 'brute') { px(sx - 15, sy - 16 + bob, 30, 30, c); px(sx - 9, sy - 10 + bob, 5, 5, '#ffea00'); px(sx + 4, sy - 10 + bob, 5, 5, '#ffea00'); px(sx - 8, sy + 2 + bob, 16, 4, '#1a3a1a'); px(sx + 15, sy - 6, 8, 18, '#6b4423'); }
+  if (f.hp < f.maxHp) { px(sx - 12, sy - f.r - 10, 24, 3, '#300'); px(sx - 12, sy - f.r - 10, 24 * f.hp / f.maxHp, 3, '#ff3355'); }
+}
+
+function draw() {
+  ctx.fillStyle = '#0b5f7a'; ctx.fillRect(0, 0, W, H);
+  if (!G) return;
+  const p = G.p;
+  const camX = Math.max(0, Math.min(MW * TS - W, p.x - W / 2)), camY = Math.max(0, Math.min(MH * TS - H, p.y - H / 2));
+  const x0 = Math.floor(camX / TS), y0 = Math.floor(camY / TS);
+  for (let y = y0; y <= y0 + VH + 1 && y < MH; y++) for (let x = x0; x <= x0 + VW + 1 && x < MW; x++) {
+    const t = G.tiles[idx(x, y)], sx = x * TS - camX, sy = y * TS - camY, h = hash(x, y);
+    if (t === 0) {
+      px(sx, sy, TS, TS, '#1a8fb8');
+      if (Math.sin(time * 2 + x * 0.7 + y * 0.4) > 0.6) px(sx + 6 + h * 12, sy + 10 + h * 8, 10, 2, '#7fe0f5');
+    } else if (t === 1) {
+      px(sx, sy, TS, TS, '#ecd08a'); px(sx + h * 26, sy + hash(y, x) * 26, 3, 3, '#d4b46a');
+      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) if (!land(x + dx, y + dy)) {
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.45 + 0.25 * Math.sin(time * 3 + x + y)) + ')';
+        if (dy) ctx.fillRect(sx, sy + (dy > 0 ? TS - 3 : 0), TS, 3); else ctx.fillRect(sx + (dx > 0 ? TS - 3 : 0), sy, 3, TS);
+      }
+    } else {
+      px(sx, sy, TS, TS, (x + y) % 2 ? '#3fae5a' : '#46b862');
+      if (h > 0.6) { px(sx + h * 20, sy + 8, 2, 5, '#2f8f47'); px(sx + h * 20 + 4, sy + 10, 2, 4, '#2f8f47'); }
+    }
+    const b = G.builds.get(idx(x, y)); if (b) drawBuild(b, sx, sy);
+    const r = G.res.get(idx(x, y)); if (r) drawRes(r, sx, sy, x, y);
+  }
+  if (G.sel >= 0 && hoverTile) {
+    const sx = hoverTile.x * TS - camX, sy = hoverTile.y * TS - camY, ok = Math.hypot(hoverTile.x * TS + 16 - p.x, hoverTile.y * TS + 16 - p.y) <= TS * 3.6 && land(hoverTile.x, hoverTile.y) && !resAt(hoverTile.x, hoverTile.y) && !buildAt(hoverTile.x, hoverTile.y);
+    ctx.strokeStyle = ok ? '#ffcc33' : '#ff3355'; ctx.lineWidth = 2; ctx.strokeRect(sx + 1, sy + 1, TS - 2, TS - 2);
+  }
+  for (const f of G.foes) drawFoe(f, f.x - camX, f.y - camY);
+  // player
+  const ppx = p.x - camX, ppy = p.y - camY, blink = p.flash > 0;
+  px(ppx - 7, ppy - 4, 14, 14, blink ? '#fff' : '#2f6bff');
+  px(ppx - 6, ppy - 14, 12, 10, '#f1c27d');
+  px(ppx - 10, ppy - 17, 20, 4, '#e8c060'); px(ppx - 6, ppy - 21, 12, 5, '#e8c060');
+  px(ppx - 3 + p.fx * 2, ppy - 11, 2, 2, '#000'); px(ppx + 2 + p.fx * 2, ppy - 11, 2, 2, '#000');
+  px(ppx - 6, ppy + 10, 4, 5, '#6b4423'); px(ppx + 2, ppy + 10, 4, 5, '#6b4423');
+  const hx = ppx + p.fx * 13, hy = ppy + p.fy * 10;
+  if (p.tools.spear) px(hx - 2, hy - 8, 3, 16, '#c9a27a'); else if (p.tools.axe) px(hx - 3, hy - 4, 7, 7, '#9aa0aa');
+  for (const q of G.parts) { ctx.globalAlpha = Math.max(0, q.life * 2); px(q.x - camX, q.y - camY, 3, 3, q.color); }
+  ctx.globalAlpha = 1;
+
+  // darkness with light holes around the player, campfires and torch
+  const fadeIn = G.phase === 'day' ? Math.max(0, (G.t - (DAY_LEN - 10)) / 10) : 1;
+  const fadeOut = G.phase === 'night' ? Math.min(1, (nightLen(G.day) - G.t) / 6) : 1;
+  const darkness = 0.9 * Math.min(fadeIn, fadeOut);
+  if (darkness > 0.01) {
+    dctx.globalCompositeOperation = 'source-over'; dctx.clearRect(0, 0, W, H);
+    dctx.fillStyle = `rgba(4,8,30,${darkness})`; dctx.fillRect(0, 0, W, H);
+    dctx.globalCompositeOperation = 'destination-out';
+    const hole = (x, y, r) => { const g = dctx.createRadialGradient(x, y, r * 0.25, x, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); dctx.fillStyle = g; dctx.beginPath(); dctx.arc(x, y, r, 0, 7); dctx.fill(); };
+    hole(ppx, ppy, p.tools.torch ? 170 : 95);
+    for (const [k, b] of G.builds) if (b.type === 'fire' && b.fuel > 0) hole((k % MW) * TS + 16 - camX, Math.floor(k / MW) * TS + 16 - camY, 140 + Math.random() * 6);
+    ctx.drawImage(dark, 0, 0);
+  }
+  for (const t of G.texts) { ctx.globalAlpha = Math.min(1, t.t * 2); ctx.fillStyle = t.color; ctx.font = '9px "Press Start 2P"'; ctx.textAlign = 'center'; ctx.fillText(t.text, t.x - camX, t.y - camY); }
+  ctx.globalAlpha = 1;
+
+  // HUD
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(8, 8, 214, 74);
+  ctx.font = '8px "Press Start 2P"'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff7a9a'; ctx.fillText('HP', 16, 24); px(52, 16, 160, 9, '#300'); px(52, 16, 160 * Math.max(0, p.hp) / 100, 9, p.hp > 35 ? '#39d98a' : '#ff3355');
+  ctx.fillStyle = '#ffcc33'; ctx.fillText('FOOD', 16, 42); px(52, 34, 160, 9, '#331a00'); px(52, 34, 160 * p.hunger / 100, 9, p.hunger > 25 ? '#ff9f1c' : '#ff3355');
+  ctx.font = '13px VT323'; ctx.fillStyle = '#fff';
+  ctx.fillText(`🪵 ${p.inv.wood}   🪨 ${p.inv.stone}   🍓 ${p.inv.food}`, 16, 64);
+  ctx.fillText((p.tools.axe ? '🪓' : '') + (p.tools.spear ? '🔱' : '') + (p.tools.torch ? '🔦' : ''), 16, 78);
+  const left = G.phase === 'day' ? DAY_LEN - G.t : nightLen(G.day) - G.t;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(W - 210, 8, 202, 40);
+  ctx.font = '10px "Press Start 2P"'; ctx.textAlign = 'right';
+  ctx.fillStyle = G.phase === 'day' ? '#ffcc33' : '#9fb4ff';
+  ctx.fillText((G.phase === 'day' ? '☀ DAY ' : '☾ NIGHT ') + G.day + '/' + WIN_NIGHTS, W - 16, 26);
+  ctx.font = '8px "Press Start 2P"'; ctx.fillStyle = '#ddd';
+  ctx.fillText((G.phase === 'day' ? 'night in ' : 'dawn in ') + Math.ceil(left) + 's' + (G.phase === 'night' ? ' · ' + G.foes.length + ' foes' : ''), W - 16, 42);
+  if (G.banner) {
+    ctx.globalAlpha = Math.min(1, G.banner.t);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, H / 2 - 30, W, 48);
+    ctx.font = '16px "Press Start 2P"'; ctx.textAlign = 'center'; ctx.fillStyle = G.banner.color; ctx.fillText(G.banner.text, W / 2, H / 2 + 2);
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- build bar ----------
+function buildBar() {
+  const bar = $('bar'); bar.innerHTML = '';
+  BUILD.forEach((it, i) => {
+    const b = document.createElement('button'); b.className = 'bb'; b.dataset.b = i;
+    b.innerHTML = `<b>${i + 1} ${it.name}</b>${costText(it.cost)}`;
+    b.title = it.desc;
+    b.addEventListener('click', () => { if (state === 'play') G.sel = G.sel === i ? -1 : i; });
+    bar.append(b);
+  });
+  CRAFT.forEach((c, i) => {
+    const b = document.createElement('button'); b.className = 'bb'; b.dataset.c = i;
+    b.innerHTML = `<b>${c.name}</b>${costText(c.cost)}`; b.title = c.desc;
+    b.addEventListener('click', () => craft(i));
+    bar.append(b);
+  });
+  const e = document.createElement('button'); e.className = 'bb'; e.innerHTML = '<b>E EAT</b>1🍓 → +30'; e.addEventListener('click', eat); bar.append(e);
+}
+function refreshBar() {
+  if (!G) return;
+  for (const b of $('bar').children) {
+    if (b.dataset.b !== undefined) { const it = BUILD[b.dataset.b]; b.classList.toggle('sel', G.sel === +b.dataset.b); b.classList.toggle('poor', !canPay(it.cost)); }
+    else if (b.dataset.c !== undefined) { const c = CRAFT[b.dataset.c]; b.classList.toggle('done', !!G.p.tools[c.id]); b.classList.toggle('poor', !G.p.tools[c.id] && !canPay(c.cost)); }
+  }
+}
+
+// ---------- input ----------
+let actHeld = false, hoverTile = null;
+const joy = { x: 0, y: 0 };
+window.addEventListener('keydown', e => {
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+  keys.add(e.code);
+  if (state !== 'play' || e.repeat) return;
+  if (e.code === 'Space' || e.code === 'KeyJ') action();
+  else if (e.code === 'KeyE') eat();
+  else if (e.code === 'KeyF') placeInFront();
+  else if (/^Digit[1-4]$/.test(e.code)) { const i = +e.code.slice(5) - 1; G.sel = G.sel === i ? -1 : i; }
+  else if (e.code === 'Escape') G.sel = -1;
+});
+window.addEventListener('keyup', e => keys.delete(e.code));
+window.addEventListener('blur', () => { keys.clear(); actHeld = false; joy.x = joy.y = 0; });
+function canvasTile(e) {
+  const r = cv.getBoundingClientRect(), p = G.p;
+  const camX = Math.max(0, Math.min(MW * TS - W, p.x - W / 2)), camY = Math.max(0, Math.min(MH * TS - H, p.y - H / 2));
+  const x = (e.clientX - r.left) * W / r.width + camX, y = (e.clientY - r.top) * H / r.height + camY;
+  return { x: tileOf(x), y: tileOf(y), wx: x, wy: y };
+}
+cv.addEventListener('pointermove', e => { if (state === 'play') hoverTile = canvasTile(e); });
+cv.addEventListener('pointerdown', e => {
+  if (state !== 'play') return;
+  e.preventDefault();
+  const t = canvasTile(e);
+  if (G.sel >= 0) return placeAt(t.x, t.y);
+  // no building selected: turn toward the click and act (gather / attack)
+  const dx = t.wx - G.p.x, dy = t.wy - G.p.y, d = Math.hypot(dx, dy) || 1;
+  G.p.fx = dx / d; G.p.fy = dy / d;
+  action();
+});
+const joyEl = $('joy'), knob = $('knob');
+let joyId = null;
+joyEl.addEventListener('pointerdown', e => { e.preventDefault(); joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); moveJoy(e); });
+joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) moveJoy(e); });
+const endJoy = e => { if (e.pointerId !== joyId) return; joyId = null; joy.x = joy.y = 0; knob.style.left = '40px'; knob.style.top = '40px'; };
+joyEl.addEventListener('pointerup', endJoy); joyEl.addEventListener('pointercancel', endJoy);
+function moveJoy(e) {
+  const r = joyEl.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  let dx = (e.clientX - cx) / 50, dy = (e.clientY - cy) / 50;
+  const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
+  joy.x = dx; joy.y = dy;
+  knob.style.left = 40 + dx * 40 + 'px'; knob.style.top = 40 + dy * 40 + 'px';
+}
+$('t-act').addEventListener('pointerdown', e => { e.preventDefault(); actHeld = true; });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('t-act').addEventListener(ev, () => { actHeld = false; });
+$('t-eat').addEventListener('pointerdown', e => { e.preventDefault(); eat(); });
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
+
+function startGame() {
+  ensureAudio(); newGame(); state = 'play';
+  $('menu').classList.add('hidden'); $('over').classList.add('hidden');
+  fitCanvas();
+}
+function showMenu() {
+  $('m-stats').textContent = best.nights ? `BEST: ${best.nights} NIGHT${best.nights === 1 ? '' : 'S'} SURVIVED${best.wins ? ' · RESCUED x' + best.wins : ''}` : '';
+  $('menu').classList.remove('hidden');
+}
+$('b-play').addEventListener('click', startGame);
+$('o-retry').addEventListener('click', startGame);
+
+buildBar();
+fitCanvas();
+let last = performance.now(), barT = 0;
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  if ((barT += dt) > 0.2) { barT = 0; refreshBar(); }
+  requestAnimationFrame(loop);
+}
+showMenu();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

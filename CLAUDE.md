@@ -13,7 +13,7 @@ then open http://localhost:8000/
 - Live site: https://deweshtri.github.io/gamer-hub/ (GitHub Pages, branch `main`, root)
 
 ## Games
-`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`, `zombie-survival.html`, `neon-drift.html`, `ninja-dash.html`, `tower-defense.html`, `cube-rush.html`, `cyber-heist.html`, `fishing-frenzy.html`, `astro-blaster.html`, `dungeon-crawler.html`
+`index.html` (hub) links to: `sky-jumper.html`, `snake.html`, `tictactoe.html`, `whackamole.html`, `memory.html`, `penalty.html`, `pong.html`, `rps.html`, `zombie-survival.html`, `neon-drift.html`, `ninja-dash.html`, `tower-defense.html`, `cube-rush.html`, `cyber-heist.html`, `fishing-frenzy.html`, `astro-blaster.html`, `dungeon-crawler.html`, `island-survivor.html`
 
 ## Retro look
 All games use a retro arcade style (Press Start 2P / VT323 fonts, dark neon palette, CRT scanlines). The original 7 games (Sky Jumper, Tic-Tac-Toe, Whack-a-Mole, Memory, Penalty, Pong, RPS) get it from `retro.css`, linked right after each page's own `<style>`, plus neon colors / low pixel-ratio rendering in their canvas/3D code. Restyles must stay visual-only — never change gameplay, controls or hitboxes.
