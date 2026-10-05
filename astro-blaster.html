@@ -555,16 +555,18 @@ window.addEventListener('keydown', e => {
   keys.add(e.code);
 });
 window.addEventListener('keyup', e => keys.delete(e.code));
-window.addEventListener('blur', () => keys.clear());
+window.addEventListener('blur', () => { keys.clear(); dragId = null; });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); dragId = null; } });
 
 // Drag anywhere: the ship moves by the same amount your finger/mouse moves (no need to touch the ship itself).
 let dragId = null, lastPt = null, dragDX = 0, dragDY = 0;
 window.addEventListener('pointerdown', e => {
-  if (state !== 'play' || e.target.closest('button,a,.overlay')) return;
+  if (state !== 'play' || e.button !== 0 || e.target.closest('button,a,.overlay,#gh-pause-btn,#gh-music-btn')) return;
   dragId = e.pointerId; lastPt = { x: e.clientX, y: e.clientY };
 });
 window.addEventListener('pointermove', e => {
   if (e.pointerId !== dragId || state !== 'play') return;
+  if (e.pointerType === 'mouse' && e.buttons === 0) { dragId = null; return; }
   const scale = W / cv.getBoundingClientRect().width * 1.15;
   dragDX += (e.clientX - lastPt.x) * scale; dragDY += (e.clientY - lastPt.y) * scale;
   lastPt = { x: e.clientX, y: e.clientY };
