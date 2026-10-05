@@ -60,7 +60,8 @@ body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:
   </div>
   <div class="hints">
     MOVE: WASD / arrow keys · or drag anywhere on the screen<br/>
-    Lasers fire automatically · boss every 5th wave<br/>
+    SHOOT: click / hold the mouse button (or SPACE) · phones: touch &amp; hold<br/>
+    Boss every 5th wave<br/>
     Power-ups: ⚡ rapid fire · ✳ triple shot · 🛡 shield · ❤ repair
   </div>
 </div>
@@ -298,8 +299,9 @@ function update(dt) {
   p.x = Math.max(18, Math.min(W - 18, p.x)); p.y = Math.max(H * 0.25, Math.min(H - 22, p.y));
   p.inv = Math.max(0, p.inv - dt); p.rapid = Math.max(0, p.rapid - dt); p.triple = Math.max(0, p.triple - dt);
 
-  // auto fire
-  if ((p.cd -= dt) <= 0 && G.phase !== 'intro') {
+  // fire only while the mouse/finger is held down or Space is pressed
+  p.cd = Math.max(0, p.cd - dt);
+  if (p.cd <= 0 && (dragId !== null || keys.has('Space')) && G.phase !== 'intro') {
     p.cd = G.delay * (p.rapid > 0 ? 0.5 : 1);
     const n = Math.min(7, G.beams + (p.triple > 0 ? 2 : 0));
     for (let i = 0; i < n; i++) {
