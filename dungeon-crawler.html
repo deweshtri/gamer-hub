@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<script src="pause.js?v=2"></script>
+<script src="music.js?v=3" data-theme="dungeon"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"/>
+<title>Gamer Hub - Dungeon Crawler</title>
+<meta name="description" content="Dungeon Crawler - a retro mini RPG. Explore random dungeons, fight monsters and bosses, find weapons, armor and potions, and earn permanent upgrades. Made by Atharv Tripathi."/>
+<link rel="stylesheet" href="style.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet"/>
+<style>
+:root { --gold:#ffcc33; --red:#ff3355; --panel:#160e08; --line:#4a3420; --torch:#ff9f1c; }
+body { display:flex; flex-direction:column; min-height:100vh; overflow:hidden; align-items:center; background:#070403; color:#f3e6d0; font-family:'VT323',monospace; font-size:20px; user-select:none; -webkit-user-select:none; }
+body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:9000; background:repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 3px); }
+.topbar h1 { font-family:'Press Start 2P',monospace; font-size:clamp(0.7rem,2.5vw,1.05rem); letter-spacing:3px; color:var(--torch); text-shadow:0 0 10px var(--torch),3px 3px 0 #000; }
+.topbar .back-link { font-family:'Press Start 2P',monospace; font-size:0.6rem; background:rgba(255,159,28,0.08); color:var(--torch); border:2px solid var(--torch); border-radius:0; box-shadow:3px 3px 0 #000; }
+.credit { color:var(--torch); font-family:'Press Start 2P',monospace; font-size:0.55rem; opacity:0.7; letter-spacing:1px; padding:0.5em 0; }
+.game-wrap { flex:1; display:flex; align-items:center; justify-content:center; width:100%; padding:0.3em; }
+#game { display:block; image-rendering:pixelated; box-shadow:0 0 26px rgba(255,159,28,0.25),6px 6px 0 #000; touch-action:none; }
+#pad { display:none; position:fixed; right:14px; bottom:18px; z-index:30; grid-template-columns:repeat(3,58px); grid-template-rows:repeat(3,58px); gap:5px; }
+#pad button, #acts button { font-family:'Press Start 2P',monospace; font-size:0.85rem; background:rgba(22,14,8,0.85); color:var(--gold); border:2px solid var(--torch); border-radius:6px; touch-action:none; box-shadow:3px 3px 0 #000; }
+#pad button:active, #acts button:active { background:var(--torch); color:#000; }
+#acts { display:none; position:fixed; left:14px; bottom:18px; z-index:30; flex-direction:column; gap:6px; }
+#acts button { width:96px; height:52px; font-size:0.55rem; line-height:1.5; }
+body.touch #pad { display:grid; }
+body.touch #acts { display:flex; }
+.overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(5,3,2,0.95); text-align:center; padding:1em; z-index:40; overflow-y:auto; }
+.overlay.hidden { display:none; }
+.overlay h2 { font-family:'Press Start 2P',monospace; font-size:clamp(1rem,4vw,1.9rem); color:var(--torch); text-shadow:0 0 16px var(--torch),4px 4px 0 #000; margin:0 0 0.4em; line-height:1.5; }
+.sub { color:#c9b393; margin:0 0 0.8em; max-width:620px; line-height:1.2; }
+.stat { font-family:'Press Start 2P',monospace; font-size:clamp(0.55rem,1.8vw,0.72rem); color:var(--gold); margin:0.35em 0; line-height:1.7; }
+.b { font-family:'Press Start 2P',monospace; font-size:clamp(0.55rem,1.8vw,0.7rem); background:var(--panel); color:#fff; border:2px solid var(--torch); padding:1em 1.3em; cursor:pointer; box-shadow:4px 4px 0 #000; margin:0.3em; }
+.b:hover:not(:disabled) { background:#2e1c0e; }
+.b:disabled { opacity:0.35; cursor:default; }
+.b.red { border-color:var(--red); background:#3a0a14; }
+.b.gold { border-color:var(--gold); color:var(--gold); }
+.row { display:flex; flex-wrap:wrap; justify-content:center; gap:4px; }
+.hints { font-size:1rem; color:#8f7a5c; margin-top:0.8em; line-height:1.4; }
+.shop { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:0.6em 0 1em; max-width:900px; }
+.item { width:160px; background:var(--panel); border:3px solid var(--line); padding:10px; box-shadow:5px 5px 0 #000; text-align:left; }
+.item .ic { font-size:1.6rem; }
+.item .nm { font-family:'Press Start 2P',monospace; font-size:0.55rem; color:var(--torch); margin:6px 0; }
+.item .pips { color:var(--gold); letter-spacing:3px; }
+.item .ef { color:#e8d8bc; font-size:1rem; min-height:2.4em; line-height:1.15; margin:4px 0; }
+.item .b { width:100%; margin:4px 0 0; padding:0.8em 0.4em; }
+</style>
+<link rel="stylesheet" href="landscape.css?v=1" />
+</head>
+<body>
+<div class="topbar">
+  <a class="back-link" href="index.html">← HUB</a>
+  <h1>DUNGEON CRAWLER</h1>
+  <span class="spacer"></span>
+</div>
+<div class="game-wrap"><canvas id="game" width="800" height="512"></canvas></div>
+<div class="credit">MADE BY ATHARV TRIPATHI</div>
+
+<div id="pad">
+  <span></span><button data-d="0,-1">▲</button><span></span>
+  <button data-d="-1,0">◀</button><button data-d="0,0">·</button><button data-d="1,0">▶</button>
+  <span></span><button data-d="0,1">▼</button><span></span>
+</div>
+<div id="acts"><button id="t-potion">POTION<br/>(Q)</button><button id="t-wait">WAIT<br/>(SPACE)</button></div>
+
+<div class="overlay" id="menu">
+  <h2>🗡️ DUNGEON<br/>CRAWLER</h2>
+  <p class="sub">Descend 9 floors of a randomly generated dungeon. Fight monsters, loot weapons and armor, and slay the bosses guarding floors 3, 6 and 9. When you fall, you keep half your gold for permanent upgrades at camp.</p>
+  <div class="stat" id="m-stats"></div>
+  <div class="row">
+    <button class="b red" id="b-play">▶ ENTER THE DUNGEON</button>
+    <button class="b gold" id="b-camp">🔥 CAMP UPGRADES</button>
+  </div>
+  <div class="hints">
+    MOVE / ATTACK: arrow keys or WASD — walk into a monster to hit it · tap a side of the map on phones<br/>
+    Q: drink potion · SPACE: wait a turn · step on the stairs ▼ to go deeper<br/>
+    Big boss attacks flash red first — step out of the red tiles!
+  </div>
+</div>
+
+<div class="overlay hidden" id="camp">
+  <h2>🔥 CAMP</h2>
+  <div class="stat" id="c-gold"></div>
+  <div class="shop" id="c-items"></div>
+  <button class="b" id="c-back">◀ BACK</button>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="o-title">YOU HAVE FALLEN</h2>
+  <div class="stat" id="o-detail"></div>
+  <div class="stat" id="o-gold"></div>
+  <div class="row">
+    <button class="b red" id="o-retry">↻ DELVE AGAIN</button>
+    <button class="b gold" id="o-camp">🔥 CAMP</button>
+    <button class="b" id="o-menu">MENU</button>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const TS = 32, VW = 25, VH = 14, W = 800, H = 512, MW = 48, MH = 32, MAX_FLOOR = 9;
+const SAVE_KEY = 'gamerhub_dungeon';
+const $ = id => document.getElementById(id);
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+function chromeHeight() {
+  const credit = document.querySelector('.credit');
+  const creditH = credit && getComputedStyle(credit).position !== 'fixed' ? credit.offsetHeight : 0;
+  return document.querySelector('.topbar').offsetHeight + creditH + 16;
+}
+function fitCanvas() {
+  const s = Math.min((window.innerWidth - 12) / W, (window.innerHeight - chromeHeight()) / H);
+  cv.style.width = Math.floor(W * s) + 'px';
+  cv.style.height = Math.floor(H * s) + 'px';
+}
+window.addEventListener('resize', fitCanvas);
+fitCanvas();
+
+// ---------- save / permanent upgrades ----------
+function loadSave() {
+  const d = { gold: 0, upg: { vit: 0, might: 0, tough: 0, alch: 0, fortune: 0 }, best: 0, wins: 0 };
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s) return Object.assign(d, s, { upg: Object.assign(d.upg, s.upg) }); } catch (e) {}
+  return d;
+}
+let save = loadSave();
+function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+const UPG = {
+  vit:     { name: 'VITALITY',  icon: '❤️', costs: [60, 150, 320, 600, 1000], eff: l => 'Max HP +' + l * 6 + (l < 5 ? ' → +' + (l + 1) * 6 : ' (MAX)') },
+  might:   { name: 'MIGHT',     icon: '⚔️', costs: [80, 190, 380, 700, 1150], eff: l => 'Attack +' + l + (l < 5 ? ' → +' + (l + 1) : ' (MAX)') },
+  tough:   { name: 'TOUGHNESS', icon: '🛡️', costs: [80, 190, 380, 700, 1150], eff: l => 'Defense +' + l + (l < 5 ? ' → +' + (l + 1) : ' (MAX)') },
+  alch:    { name: 'ALCHEMY',   icon: '🧪', costs: [50, 130, 280, 520, 900],  eff: l => 'Start with ' + (1 + l) + ' potion' + (l ? 's' : '') + ', heal ' + (35 + l * 5) + '%' },
+  fortune: { name: 'FORTUNE',   icon: '💰', costs: [40, 110, 240, 450, 800],  eff: l => 'Gold found +' + l * 20 + '%, keep ' + (50 + l * 6) + '% on death' },
+};
+
+// ---------- gear, monsters ----------
+const WEAPONS = [
+  { name: 'Rusty Dagger', atk: 1 }, { name: 'Short Sword', atk: 3 }, { name: 'Battle Axe', atk: 5 },
+  { name: 'Longsword', atk: 7 }, { name: 'Warhammer', atk: 9 }, { name: 'Flame Blade', atk: 12 },
+];
+const ARMORS = [
+  { name: 'Cloth Tunic', def: 0 }, { name: 'Leather Armor', def: 1 }, { name: 'Chainmail', def: 2 },
+  { name: 'Scale Armor', def: 3 }, { name: 'Plate Armor', def: 5 }, { name: 'Dragon Mail', def: 7 },
+];
+// minFloor, hp, atk, def, xp, gold, sprite, special
+const MONSTERS = {
+  rat:      { name: 'Rat',         f: 1, hp: 4,  atk: 2,  def: 0, xp: 2,  gold: 2,  spr: 'rat' },
+  slime:    { name: 'Slime',       f: 1, hp: 7,  atk: 2,  def: 0, xp: 3,  gold: 3,  spr: 'slime', slow: true },
+  bat:      { name: 'Bat',         f: 1, hp: 4,  atk: 3,  def: 0, xp: 3,  gold: 2,  spr: 'bat', erratic: true },
+  goblin:   { name: 'Goblin',      f: 2, hp: 9,  atk: 4,  def: 1, xp: 6,  gold: 6,  spr: 'goblin' },
+  skeleton: { name: 'Skeleton',    f: 3, hp: 13, atk: 5,  def: 2, xp: 9,  gold: 8,  spr: 'skeleton' },
+  orc:      { name: 'Orc',         f: 4, hp: 20, atk: 7,  def: 2, xp: 14, gold: 12, spr: 'orc' },
+  wraith:   { name: 'Wraith',      f: 5, hp: 16, atk: 9,  def: 1, xp: 16, gold: 14, spr: 'wraith', erratic: true },
+  knight:   { name: 'Dark Knight', f: 6, hp: 30, atk: 10, def: 5, xp: 24, gold: 20, spr: 'knight' },
+};
+const BOSSES = {
+  3: { name: 'Goblin King',   hp: 95,  atk: 10, def: 3, xp: 60,  gold: 120, spr: 'goblin', tint: '#c9a400', ability: 'summon' },
+  6: { name: 'Bone Golem',    hp: 190, atk: 15, def: 7, xp: 120, gold: 250, spr: 'skeleton', tint: '#9a8f80', ability: 'slam' },
+  9: { name: 'Shadow Dragon', hp: 420, atk: 22, def: 9, xp: 250, gold: 500, spr: 'dragon', tint: null, ability: 'breath' },
+};
+
+// ---------- pixel sprites (8x8, each pixel drawn 4x4) ----------
+const SPR = {
+  player:   { p: { h: '#8a8f99', H: '#c9ced8', s: '#f1c27d', e: '#111', b: '#2f6bff', B: '#1a3a99', w: '#e8eef5', g: '#ffcc33', l: '#6b4423' },
+              d: ['..hhhh.w', '.hHHHHhw', '.hsesehw', '..ssss.w', '.bbBBbbg', 'bbbBBbb.', '.bbbbbb.', '.ll..ll.'] },
+  rat:      { p: { r: '#8a7560', e: '#ff3355', p: '#ff9eb0' }, d: ['........', '........', '...rrr..', '..rrrrre', '.rrrrrrr', 'prrrrrr.', 'p.r..r..', '........'] },
+  slime:    { p: { s: '#39d98a', e: '#063' }, d: ['........', '........', '...ss...', '..ssss..', '.sesess.', 'ssssssss', 'ssssssss', '........'] },
+  bat:      { p: { k: '#6a3d9a', e: '#ff3355' }, d: ['........', 'k......k', 'kk.kk.kk', 'kkkkkkkk', '.kkekek.', '..kkkk..', '...kk...', '........'] },
+  goblin:   { p: { g: '#5fae3a', e: '#ffea00', c: '#7a4a24', k: '#c0c8d0' }, d: ['..gggg..', '.gegegg.', 'gggggggg', '..gggg..', '.cccccck', 'g.cccc.k', '..c..c..', '..g..g..'] },
+  skeleton: { p: { w: '#e8e2d0', e: '#111', d: '#555' }, d: ['..wwww..', '.weewew.', '.wwwwww.', '..wddw..', '.wwwwww.', 'w.wwww.w', '..w..w..', '.ww..ww.'] },
+  orc:      { p: { o: '#6b8e23', e: '#ff3355', t: '#fff', a: '#7a5230', x: '#aab' }, d: ['.oooooo.', 'oeooeoo.', 'otoooto.', '.aaaaaxx', 'aaaaaaxx', 'oaaaaa.x', '.aa..aa.', '.oo..oo.'] },
+  wraith:   { p: { w: '#b9a6ff', e: '#00e5ff' }, d: ['..wwww..', '.wwwwww.', '.weewew.', '.wwwwww.', 'wwwwwwww', 'wwwwwwww', 'w.ww.ww.', '........'] },
+  knight:   { p: { m: '#3a3f55', r: '#ff3355', c: '#6a1b9a' }, d: ['..mmmm..', '.mmrrmm.', '.mmmmmm.', 'cmmmmmmc', 'cmmmmmmc', 'c.mmmm.c', '.mm..mm.', '.mm..mm.'] },
+  dragon:   { p: { d: '#8b1a1a', e: '#ffea00', w: '#6a1b9a' }, d: ['w.....dd', 'ww...ddd', 'wwwddded', '.wdddddd', '..ddddd.', '.dddddd.', 'dd.dd.dd', 'd..d...d'] },
+  potion:   { p: { c: '#8a5a2b', g: '#cfe8ff', r: '#ff3355' }, d: ['...cc...', '...gg...', '..g..g..', '.grrrrg.', '.grrrrg.', '.grrrrg.', '..gggg..', '........'] },
+  weapon:   { p: { s: '#dfe6ee', h: '#ffcc33' }, d: ['.......s', '......ss', '.....ss.', '....ss..', '.h.ss...', '..hs....', '.h.h....', 'h.......'] },
+  armor:    { p: { a: '#9aa4b0', A: '#ffcc33' }, d: ['.a....a.', '.aaaaaa.', 'aaaaaaaa', '.aaAAaa.', '.aaAAaa.', '.aaaaaa.', '.aaaaaa.', '........'] },
+  chest:    { p: { b: '#8a4b24', g: '#ffcc33' }, d: ['........', '.bbbbbb.', 'bbbbbbbb', 'gggggggg', 'bbbggbbb', 'bbbbbbbb', 'bbbbbbbb', '........'] },
+  gold:     { p: { y: '#ffcc33', Y: '#fff2a8' }, d: ['........', '........', '...yy...', '..yYYy..', '.yyyyyy.', 'yYyyyYyy', 'yyyyyyyy', '........'] },
+};
+function drawSprite(name, x, y, scale = 1, tint = null, flash = false) {
+  const s = SPR[name], u = 4 * scale, off = (TS - 8 * u) / 2;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const ch = s.d[r][c];
+    if (ch === '.') continue;
+    ctx.fillStyle = flash ? '#fff' : (tint && ch === s.d[0].replace(/\./g, '')[0] ? tint : s.p[ch]);
+    ctx.fillRect(Math.round(x + off + c * u), Math.round(y + off + r * u), Math.ceil(u), Math.ceil(u));
+  }
+}
+
+// ---------- state ----------
+let state = 'menu', G = null, time = 0;
+const idx = (x, y) => y * MW + x;
+const isFloor = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH && G.map[idx(x, y)] === 1;
+const monAt = (x, y) => G.mons.find(m => m.x === x && m.y === y && m.hp > 0);
+const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+const goldMul = () => 1 + save.upg.fortune * 0.2;
+
+function log(text, color = '#e8d8bc') { G.log.push({ text, color, t: time }); if (G.log.length > 5) G.log.shift(); }
+function popup(x, y, text, color) { G.fx.push({ x: x * TS + TS / 2, y: y * TS, text, color, t: 0.9 }); }
+
+function newRun() {
+  const u = save.upg;
+  G = {
+    floor: 0, log: [], fx: [], warn: [], turn: 0, kills: 0,
+    p: { x: 0, y: 0, hp: 26 + u.vit * 6, maxHp: 26 + u.vit * 6, atk: 2 + u.might, def: u.tough, lvl: 1, xp: 0, next: 15,
+         weapon: 0, armor: 0, potions: 1 + u.alch, gold: 0, flash: 0 },
+  };
+  nextFloor();
+}
+const atkOf = p => p.atk + WEAPONS[p.weapon].atk;
+const defOf = p => p.def + ARMORS[p.armor].def;
+
+// ---------- dungeon generation ----------
+function carveRoom(r) { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) G.map[idx(x, y)] = 1; }
+function carveCorridor(a, b) {
+  let x = a.cx, y = a.cy;
+  const horizFirst = Math.random() < 0.5;
+  const stepX = () => { while (x !== b.cx) { x += Math.sign(b.cx - x); G.map[idx(x, y)] = 1; } };
+  const stepY = () => { while (y !== b.cy) { y += Math.sign(b.cy - y); G.map[idx(x, y)] = 1; } };
+  if (horizFirst) { stepX(); stepY(); } else { stepY(); stepX(); }
+}
+function bfs(sx, sy) {
+  const dist = new Int16Array(MW * MH).fill(-1), q = [[sx, sy]];
+  dist[idx(sx, sy)] = 0;
+  for (let i = 0; i < q.length; i++) {
+    const [x, y] = q[i];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (isFloor(nx, ny) && dist[idx(nx, ny)] < 0) { dist[idx(nx, ny)] = dist[idx(x, y)] + 1; q.push([nx, ny]); }
+    }
+  }
+  return dist;
+}
+function freeTileIn(r) {
+  for (let t = 0; t < 60; t++) {
+    const x = rint(r.x, r.x + r.w - 1), y = rint(r.y, r.y + r.h - 1);
+    if (!monAt(x, y) && !G.items.some(i => i.x === x && i.y === y) && !(G.p.x === x && G.p.y === y) && !(G.stairs && G.stairs.x === x && G.stairs.y === y)) return { x, y };
+  }
+  return null;
+}
+function gearTier(f) { return Math.max(0, Math.min(5, Math.floor(f * 0.55 + Math.random() * 1.6 - 0.3))); }
+
+function nextFloor() {
+  G.floor++;
+  const f = G.floor, bossFloor = f % 3 === 0;
+  G.map = new Uint8Array(MW * MH); G.seen = new Uint8Array(MW * MH); G.vis = new Uint8Array(MW * MH);
+  G.mons = []; G.items = []; G.warn = []; G.stairs = null; G.boss = null;
+  const rooms = [];
+  const fits = r => r.x >= 1 && r.y >= 1 && r.x + r.w < MW - 1 && r.y + r.h < MH - 1 && rooms.every(o => r.x + r.w + 1 < o.x || o.x + o.w + 1 < r.x || r.y + r.h + 1 < o.y || o.y + o.h + 1 < r.y);
+  if (bossFloor) {
+    for (let t = 0; t < 100; t++) { const r = { x: rint(1, MW - 15), y: rint(1, MH - 11), w: 13, h: 9 }; if (fits(r)) { r.boss = true; rooms.push(r); break; } }
+  }
+  for (let t = 0; t < 400 && rooms.length < 11; t++) {
+    const r = { x: rint(1, MW - 12), y: rint(1, MH - 9), w: rint(5, 10), h: rint(4, 7) };
+    if (fits(r)) rooms.push(r);
+  }
+  rooms.forEach(r => { r.cx = r.x + (r.w >> 1); r.cy = r.y + (r.h >> 1); carveRoom(r); });
+  rooms.sort((a, b) => a.cx - b.cx);
+  for (let i = 1; i < rooms.length; i++) carveCorridor(rooms[i - 1], rooms[i]);
+  for (let k = 0; k < 2; k++) carveCorridor(pick(rooms), pick(rooms));
+
+  const bossRoom = rooms.find(r => r.boss);
+  const start = bossRoom ? rooms.reduce((a, b) => Math.hypot(b.cx - bossRoom.cx, b.cy - bossRoom.cy) > Math.hypot(a.cx - bossRoom.cx, a.cy - bossRoom.cy) ? b : a) : rooms[0];
+  G.p.x = start.cx; G.p.y = start.cy;
+  const dist = bfs(G.p.x, G.p.y);
+  if (!bossRoom) {
+    const far = rooms.reduce((a, b) => dist[idx(b.cx, b.cy)] > dist[idx(a.cx, a.cy)] ? b : a);
+    G.stairs = { x: far.cx, y: far.cy };
+  }
+
+  const others = rooms.filter(r => r !== start && r !== bossRoom);
+  const pool = Object.entries(MONSTERS).filter(([, m]) => m.f <= f);
+  const nMon = Math.min(28, 6 + Math.round(f * 2.6));
+  for (let i = 0; i < nMon && others.length; i++) {
+    const weights = pool.map(([, m]) => 1 + (m.f >= f - 2 ? 2 : 0));
+    let r = Math.random() * weights.reduce((a, b) => a + b, 0), key = pool[0][0];
+    for (let k = 0; k < pool.length; k++) { r -= weights[k]; if (r <= 0) { key = pool[k][0]; break; } }
+    const pos = freeTileIn(pick(others));
+    if (pos) addMonster(key, pos.x, pos.y);
+  }
+  if (bossRoom) {
+    const b = BOSSES[f];
+    G.boss = { ...b, key: 'boss', x: bossRoom.cx, y: bossRoom.cy, hp: b.hp, maxHp: b.hp, boss: true, awake: false, cd: 3, charging: null, summons: 0, flash: 0 };
+    G.mons.push(G.boss);
+    for (let i = 0; i < 2; i++) { const pos = freeTileIn(bossRoom); if (pos) addMonster(f === 3 ? 'goblin' : f === 6 ? 'skeleton' : 'knight', pos.x, pos.y); }
+  }
+  const place = (kind, extra, roomsList = others.length ? others : rooms) => { const pos = freeTileIn(pick(roomsList)); if (pos) G.items.push({ kind, x: pos.x, y: pos.y, ...extra }); };
+  for (let i = 0, n = rint(1, 2) + (bossFloor ? 1 : 0); i < n; i++) place('potion');
+  for (let i = 0, n = rint(3, 5); i < n; i++) place('gold', { amount: rint(3, 8) * f });
+  for (let i = 0, n = rint(1, 2); i < n; i++) place('chest');
+  if (Math.random() < 0.6) place(Math.random() < 0.5 ? 'weapon' : 'armor', { tier: gearTier(f) });
+
+  computeFOV();
+  log(bossFloor ? `FLOOR ${f} — something huge lurks here...` : `FLOOR ${f}`, bossFloor ? '#ff3355' : '#ffcc33');
+}
+
+function addMonster(key, x, y) {
+  const m = MONSTERS[key], over = G.floor - m.f;
+  const hp = Math.round(m.hp * (1 + 0.22 * over) * (1 + Math.max(0, G.floor - 4) * 0.12));
+  G.mons.push({ key, name: m.name, spr: m.spr, x, y, hp, maxHp: hp, atk: m.atk + Math.floor(over * 0.9) + Math.max(0, G.floor - 4), def: m.def + Math.floor(over / 2), xp: m.xp, gold: m.gold, slow: m.slow, erratic: m.erratic, awake: false, tick: 0, flash: 0 });
+}
+
+// ---------- field of view ----------
+function computeFOV() {
+  G.vis.fill(0);
+  const R = 7, px0 = G.p.x, py0 = G.p.y;
+  for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+    if (dx * dx + dy * dy > R * R + 1) continue;
+    let x = px0, y = py0;
+    const tx = px0 + dx, ty = py0 + dy, sx = Math.sign(dx), sy = Math.sign(dy), ax = Math.abs(dx), ay = Math.abs(dy);
+    let err = ax - ay;
+    for (;;) {
+      if (x < 0 || y < 0 || x >= MW || y >= MH) break;
+      G.vis[idx(x, y)] = 1; G.seen[idx(x, y)] = 1;
+      if (G.map[idx(x, y)] === 0 && !(x === px0 && y === py0)) break;
+      if (x === tx && y === ty) break;
+      const e2 = 2 * err;
+      if (e2 > -ay) { err -= ay; x += sx; }
+      if (e2 < ax) { err += ax; y += sy; }
+    }
+  }
+}
+
+// ---------- turns ----------
+function act(dx, dy) {
+  if (state !== 'play') return;
+  const p = G.p;
+  if (dx || dy) {
+    const tx = p.x + dx, ty = p.y + dy, m = monAt(tx, ty);
+    if (m) attackMonster(m);
+    else if (isFloor(tx, ty)) { p.x = tx; p.y = ty; pickup(); if (G.stairs && p.x === G.stairs.x && p.y === G.stairs.y) return descend(); }
+    else return;
+  }
+  endTurn();
+}
+function drinkPotion() {
+  if (state !== 'play') return;
+  const p = G.p;
+  if (!p.potions) { log('No potions left!', '#ff3355'); return; }
+  if (p.hp >= p.maxHp) { log('Already at full health.'); return; }
+  p.potions--;
+  const heal = Math.ceil(p.maxHp * (0.35 + save.upg.alch * 0.05));
+  p.hp = Math.min(p.maxHp, p.hp + heal);
+  popup(p.x, p.y, '+' + heal, '#39ff14'); log('You drink a potion. +' + heal + ' HP', '#39ff14'); sfx.potion();
+  endTurn();
+}
+function endTurn() {
+  G.turn++;
+  monstersTurn();
+  computeFOV();
+  if (G.p.hp <= 0) endRun(false);
+}
+
+function attackMonster(m) {
+  const p = G.p, crit = Math.random() < 0.1;
+  let dmg = Math.max(1, atkOf(p) + rint(-1, 2) - m.def);
+  if (crit) dmg = Math.ceil(dmg * 1.6);
+  m.hp -= dmg; m.flash = 0.12; m.awake = true;
+  popup(m.x, m.y, (crit ? 'CRIT ' : '') + dmg, crit ? '#ffcc33' : '#ffffff'); sfx.hit();
+  if (m.hp <= 0) killMonster(m);
+}
+function killMonster(m) {
+  const p = G.p;
+  G.kills++;
+  const gold = Math.round(m.gold * goldMul() * (0.8 + Math.random() * 0.4));
+  p.gold += gold; p.xp += m.xp;
+  log(`${m.name} defeated! +${m.xp} XP  +${gold} gold`, '#ffcc33');
+  if (Math.random() < (m.boss ? 1 : 0.08)) G.items.push({ kind: 'potion', x: m.x, y: m.y });
+  if (m.boss) {
+    G.boss = null; G.warn = [];
+    G.items.push({ kind: Math.random() < 0.5 ? 'weapon' : 'armor', tier: Math.min(5, gearTier(G.floor) + 1), x: m.x + (isFloor(m.x + 1, m.y) ? 1 : -1), y: m.y });
+    G.stairs = { x: m.x, y: m.y, exit: G.floor >= MAX_FLOOR };
+    log(G.floor >= MAX_FLOOR ? 'THE SHADOW DRAGON FALLS! Take the exit to escape!' : `${m.name} is slain! The stairs are revealed.`, '#39ff14');
+    sfx.boss();
+  } else sfx.kill();
+  while (p.xp >= p.next) {
+    p.xp -= p.next; p.lvl++; p.next = Math.floor(p.next * 1.45);
+    p.maxHp += 5; if (p.lvl % 2 === 0) p.atk += 1; if (p.lvl % 4 === 0) p.def += 1;
+    p.hp = Math.min(p.maxHp, p.hp + Math.ceil(p.maxHp * 0.3));
+    log(`LEVEL UP! You are now level ${p.lvl}.`, '#00e5ff'); popup(p.x, p.y, 'LEVEL UP!', '#00e5ff'); sfx.level();
+  }
+}
+function pickup() {
+  const p = G.p;
+  for (const it of G.items.filter(i => i.x === p.x && i.y === p.y)) {
+    G.items.splice(G.items.indexOf(it), 1);
+    if (it.kind === 'potion') { p.potions++; log('Picked up a health potion.', '#ff7a9a'); sfx.pick(); }
+    else if (it.kind === 'gold') { const g = Math.round(it.amount * goldMul()); p.gold += g; popup(p.x, p.y, '+' + g + 'g', '#ffcc33'); sfx.coin(); }
+    else if (it.kind === 'chest') {
+      const r = Math.random();
+      if (r < 0.4) G.items.push({ kind: Math.random() < 0.5 ? 'weapon' : 'armor', tier: Math.min(5, gearTier(G.floor) + (Math.random() < 0.4 ? 1 : 0)), x: p.x, y: p.y });
+      else if (r < 0.7) { p.potions++; log('The chest held a potion!', '#ff7a9a'); }
+      else { const g = Math.round(rint(10, 20) * G.floor * goldMul()); p.gold += g; log('The chest held ' + g + ' gold!', '#ffcc33'); }
+      sfx.coin();
+      if (r < 0.4) return pickup();
+    } else equip(it);
+  }
+}
+function equip(it) {
+  const p = G.p, isW = it.kind === 'weapon', list = isW ? WEAPONS : ARMORS, cur = isW ? p.weapon : p.armor;
+  if (it.tier > cur) {
+    if (isW) p.weapon = it.tier; else p.armor = it.tier;
+    log(`Equipped ${list[it.tier].name}! (${isW ? 'ATK +' + list[it.tier].atk : 'DEF +' + list[it.tier].def})`, '#00e5ff'); sfx.level();
+  } else {
+    const g = Math.round((it.tier + 1) * 8 * goldMul()); p.gold += g;
+    log(`Found ${list[it.tier].name} — not better, sold for ${g} gold.`);
+    sfx.coin();
+  }
+}
+function descend() {
+  if (G.stairs.exit) return endRun(true);
+  sfx.stairs();
+  nextFloor();
+}
+
+function hurtPlayer(dmg, from) {
+  const p = G.p;
+  p.hp -= dmg; p.flash = 0.15;
+  popup(p.x, p.y, '-' + dmg, '#ff3355');
+  log(`${from} hits you for ${dmg}.`, '#ff6b6b');
+  sfx.hurt();
+}
+
+function monstersTurn() {
+  const p = G.p, dist = bfs(p.x, p.y);
+  for (const m of G.mons) {
+    if (m.hp <= 0) continue;
+    m.tick++;
+    if (G.vis[idx(m.x, m.y)] && dist[idx(m.x, m.y)] >= 0 && dist[idx(m.x, m.y)] < 12) {
+      if (!m.awake && m.boss) log(`${m.name} awakens!`, '#ff3355');
+      m.awake = true;
+    }
+    if (m.boss && bossAbility(m, dist)) continue;
+    if (!m.awake) { if (Math.random() < 0.2) stepRandom(m); continue; }
+    if (m.slow && m.tick % 2) continue;
+    const adjacent = Math.abs(m.x - p.x) + Math.abs(m.y - p.y) === 1;
+    if (adjacent && !(m.erratic && Math.random() < 0.3)) {
+      hurtPlayer(Math.max(1, m.atk + rint(-1, 1) - defOf(p)), m.name);
+      if (p.hp <= 0) return;
+      continue;
+    }
+    if (m.erratic && Math.random() < 0.35) { stepRandom(m); continue; }
+    stepToward(m, dist);
+  }
+  G.mons = G.mons.filter(m => m.hp > 0);
+}
+function stepRandom(m) {
+  const [dx, dy] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
+  const nx = m.x + dx, ny = m.y + dy;
+  if (isFloor(nx, ny) && !monAt(nx, ny) && !(nx === G.p.x && ny === G.p.y)) { m.x = nx; m.y = ny; }
+}
+function stepToward(m, dist) {
+  let best = null, bd = dist[idx(m.x, m.y)];
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const nx = m.x + dx, ny = m.y + dy;
+    if (!isFloor(nx, ny) || monAt(nx, ny) || (nx === G.p.x && ny === G.p.y)) continue;
+    const d = dist[idx(nx, ny)];
+    if (d >= 0 && d < bd) { bd = d; best = [nx, ny]; }
+  }
+  if (best) { m.x = best[0]; m.y = best[1]; }
+}
+
+// Returns true if the boss used its turn on a special ability.
+function bossAbility(b, dist) {
+  const p = G.p;
+  if (!b.awake) return false;
+  if (b.charging) {
+    const hit = G.warn.some(w => w.x === p.x && w.y === p.y);
+    if (b.ability === 'slam') { if (hit) hurtPlayer(Math.round(b.atk * 1.6), b.name + "'s SLAM"); else log('The slam misses!', '#39ff14'); }
+    if (b.ability === 'breath') { if (hit) hurtPlayer(24 + G.floor, b.name + "'s FIRE BREATH"); else log('You dodge the flames!', '#39ff14'); }
+    b.charging = null; G.warn = []; b.cd = b.ability === 'slam' ? 3 : 3;
+    sfx.boom();
+    return true;
+  }
+  b.cd--;
+  if (b.cd > 0) return false;
+  if (b.ability === 'summon') {
+    const alive = G.mons.filter(m => m.summoned && m.hp > 0).length;
+    if (alive >= 3) return false;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = b.x + dx, ny = b.y + dy;
+      if (isFloor(nx, ny) && !monAt(nx, ny) && !(nx === p.x && ny === p.y)) {
+        addMonster('goblin', nx, ny); const g = G.mons[G.mons.length - 1]; g.summoned = true; g.awake = true;
+        log('The Goblin King calls for help!', '#ff9f1c'); b.cd = 5; return true;
+      }
+    }
+    return false;
+  }
+  if (b.ability === 'slam' && cheb(b, p) <= 2) {
+    G.warn = [];
+    for (let y = b.y - 2; y <= b.y + 2; y++) for (let x = b.x - 2; x <= b.x + 2; x++) if (isFloor(x, y)) G.warn.push({ x, y });
+    b.charging = 'slam'; log('The Bone Golem raises its fists — get away!', '#ff3355'); return true;
+  }
+  if (b.ability === 'breath' && (b.x === p.x || b.y === p.y) && cheb(b, p) >= 2 && cheb(b, p) <= 7) {
+    const dx = Math.sign(p.x - b.x), dy = Math.sign(p.y - b.y);
+    G.warn = [];
+    for (let k = 1, x = b.x + dx, y = b.y + dy; k <= 8 && isFloor(x, y); k++, x += dx, y += dy) {
+      G.warn.push({ x, y });
+      if (dx) { if (isFloor(x, y - 1)) G.warn.push({ x, y: y - 1 }); if (isFloor(x, y + 1)) G.warn.push({ x, y: y + 1 }); }
+      else { if (isFloor(x - 1, y)) G.warn.push({ x: x - 1, y }); if (isFloor(x + 1, y)) G.warn.push({ x: x + 1, y }); }
+    }
+    b.charging = 'breath'; log('The Shadow Dragon inhales — dodge sideways!', '#ff3355'); return true;
+  }
+  b.cd = 1;
+  return false;
+}
+
+function endRun(won) {
+  state = 'over';
+  const p = G.p, keepPct = won ? 1 : 0.5 + save.upg.fortune * 0.06;
+  const kept = Math.floor(p.gold * keepPct) + (won ? 200 : 0);
+  save.gold += kept; save.best = Math.max(save.best, G.floor); if (won) save.wins++;
+  writeSave();
+  $('o-title').textContent = won ? 'DUNGEON CONQUERED!' : 'YOU HAVE FALLEN';
+  $('o-title').style.color = won ? '#39ff14' : '#ff3355';
+  $('o-detail').innerHTML = `Floor ${G.floor} · Level ${p.lvl} · ${G.kills} monsters slain<br/>${WEAPONS[p.weapon].name} · ${ARMORS[p.armor].name}`;
+  $('o-gold').textContent = won ? `+${kept} gold banked (incl. 200 victory bonus)` : `Kept ${kept} of ${p.gold} gold (${Math.round(keepPct * 100)}%) · total ${save.gold}`;
+  if (won) sfx.boss(); else sfx.die();
+  setTimeout(() => { if (state === 'over') $('over').classList.remove('hidden'); }, 900);
+}
+
+// ---------- sfx ----------
+let actx = null;
+function ensureAudio() { if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+function beep(freq, dur, type = 'square', vol = 0.05, slide = 0, delay = 0) {
+  if (!actx) return;
+  const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq * slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  hit: () => beep(220, 0.08, 'square', 0.05, 0.6), hurt: () => beep(140, 0.18, 'sawtooth', 0.07, 0.5),
+  kill: () => { beep(330, 0.08); beep(500, 0.1, 'square', 0.05, 0, 0.06); }, coin: () => beep(1200, 0.06, 'square', 0.04, 1.4),
+  pick: () => beep(900, 0.08, 'triangle', 0.06, 1.3), potion: () => [500, 650, 800].forEach((f, i) => beep(f, 0.08, 'triangle', 0.06, 0, i * 0.05)),
+  level: () => [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.1, 'square', 0.05, 0, i * 0.07)),
+  stairs: () => [400, 330, 260, 200].forEach((f, i) => beep(f, 0.1, 'triangle', 0.06, 0, i * 0.08)),
+  boom: () => beep(90, 0.4, 'sawtooth', 0.1, 0.4), boss: () => [392, 523, 659, 784, 1047].forEach((f, i) => beep(f, 0.18, 'square', 0.06, 0, i * 0.1)),
+  die: () => [330, 262, 196, 131].forEach((f, i) => beep(f, 0.25, 'sawtooth', 0.06, 0, i * 0.18)),
+};
+
+// ---------- drawing ----------
+const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5; return s - Math.floor(s); };
+function draw() {
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  if (!G) return;
+  const p = G.p;
+  const camX = Math.max(0, Math.min(MW - VW, p.x - (VW >> 1))), camY = Math.max(0, Math.min(MH - VH, p.y - (VH >> 1)));
+  for (let ty = 0; ty < VH; ty++) for (let tx = 0; tx < VW; tx++) {
+    const x = camX + tx, y = camY + ty, i = idx(x, y);
+    if (!G.seen[i]) continue;
+    const sx = tx * TS, sy = ty * TS, h = hash(x, y);
+    if (G.map[i] === 1) {
+      ctx.fillStyle = h < 0.5 ? '#2b1e14' : '#2f2116'; ctx.fillRect(sx, sy, TS, TS);
+      ctx.fillStyle = '#3a2a1c'; ctx.fillRect(sx + Math.floor(h * 24), sy + Math.floor(hash(y, x) * 24), 4, 4);
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(sx, sy + TS - 1, TS, 1); ctx.fillRect(sx + TS - 1, sy, 1, TS);
+    } else {
+      ctx.fillStyle = '#4a3423'; ctx.fillRect(sx, sy, TS, TS);
+      ctx.fillStyle = '#5c4230';
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) ctx.fillRect(sx + c * 16 + (r % 2 ? 8 : 0) - 8, sy + r * 8, 14, 6);
+      if (isFloor(x, y + 1)) { ctx.fillStyle = '#6e5038'; ctx.fillRect(sx, sy + TS - 4, TS, 4); }
+      if (h > 0.93 && isFloor(x, y + 1)) {
+        ctx.fillStyle = '#6b4423'; ctx.fillRect(sx + 14, sy + 12, 4, 10);
+        ctx.fillStyle = Math.random() < 0.5 ? '#ffcc33' : '#ff9f1c'; ctx.fillRect(sx + 12, sy + 4 + (Math.random() < 0.5 ? 0 : 1), 8, 8);
+      }
+    }
+    if (G.stairs && G.stairs.x === x && G.stairs.y === y) {
+      ctx.fillStyle = G.stairs.exit ? '#39ff14' : '#0a0604'; ctx.fillRect(sx + 4, sy + 4, 24, 24);
+      ctx.fillStyle = G.stairs.exit ? '#eaffea' : '#6e5038';
+      for (let k = 0; k < 4; k++) ctx.fillRect(sx + 6 + k * 3, sy + 8 + k * 5, 20 - k * 6, 3);
+    }
+    if (G.vis[i]) for (const it of G.items) if (it.x === x && it.y === y) drawSprite(it.kind, sx, sy + Math.sin(time * 3 + x) * 1.5);
+  }
+  for (const w of G.warn) {
+    const sx = (w.x - camX) * TS, sy = (w.y - camY) * TS;
+    if (sx < 0 || sy < 0 || sx >= W || sy >= VH * TS) continue;
+    ctx.fillStyle = `rgba(255,51,85,${0.25 + 0.25 * Math.sin(time * 14)})`; ctx.fillRect(sx, sy, TS, TS);
+  }
+  for (const m of G.mons) {
+    if (!G.vis[idx(m.x, m.y)]) continue;
+    const sx = (m.x - camX) * TS, sy = (m.y - camY) * TS;
+    if (sx < -TS || sy < -TS || sx >= W || sy >= VH * TS) continue;
+    if (m.boss) { ctx.save(); ctx.shadowColor = '#ff3355'; ctx.shadowBlur = 16; drawSprite(m.spr, sx, sy - 4, 1.35, m.tint, m.flash > 0); ctx.restore(); }
+    else drawSprite(m.spr, sx, sy, 1, null, m.flash > 0);
+    if (m.hp < m.maxHp && !m.boss) { ctx.fillStyle = '#300'; ctx.fillRect(sx + 3, sy - 3, TS - 6, 3); ctx.fillStyle = '#ff3355'; ctx.fillRect(sx + 3, sy - 3, (TS - 6) * m.hp / m.maxHp, 3); }
+  }
+  drawSprite('player', (p.x - camX) * TS, (p.y - camY) * TS, 1, null, p.flash > 0);
+
+  // darkness: remembered-but-not-visible tiles are dimmed, plus a warm torch glow around the player
+  for (let ty = 0; ty < VH; ty++) for (let tx = 0; tx < VW; tx++) {
+    const i = idx(camX + tx, camY + ty);
+    if (G.seen[i] && !G.vis[i]) { ctx.fillStyle = 'rgba(0,0,0,0.62)'; ctx.fillRect(tx * TS, ty * TS, TS, TS); }
+  }
+  const gx = (p.x - camX) * TS + TS / 2, gy = (p.y - camY) * TS + TS / 2;
+  const glow = ctx.createRadialGradient(gx, gy, 20, gx, gy, 260);
+  glow.addColorStop(0, 'rgba(255,170,60,0.12)'); glow.addColorStop(1, 'rgba(0,0,0,0.28)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, VH * TS);
+
+  for (const f of G.fx) {
+    ctx.globalAlpha = Math.min(1, f.t * 2); ctx.fillStyle = f.color; ctx.font = '10px "Press Start 2P"'; ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x - camX * TS, f.y - camY * TS - (0.9 - f.t) * 30);
+  }
+  ctx.globalAlpha = 1;
+
+  // message log
+  ctx.font = '16px VT323'; ctx.textAlign = 'left';
+  G.log.forEach((l, k) => {
+    const age = time - l.t;
+    ctx.globalAlpha = Math.max(0.35, 1 - age / 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(6, 6 + k * 18, ctx.measureText(l.text).width + 10, 17);
+    ctx.fillStyle = l.color; ctx.fillText(l.text, 11, 19 + k * 18);
+  });
+  ctx.globalAlpha = 1;
+
+  if (G.boss && G.boss.awake) {
+    const b = G.boss;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(W / 2 - 170, VH * TS - 36, 340, 30);
+    ctx.fillStyle = '#300'; ctx.fillRect(W / 2 - 160, VH * TS - 16, 320, 8);
+    ctx.fillStyle = '#ff3355'; ctx.fillRect(W / 2 - 160, VH * TS - 16, 320 * Math.max(0, b.hp / b.maxHp), 8);
+    ctx.font = '9px "Press Start 2P"'; ctx.textAlign = 'center'; ctx.fillStyle = '#ff9fb0'; ctx.fillText(b.name.toUpperCase(), W / 2, VH * TS - 22);
+  }
+
+  // bottom HUD
+  const hy = VH * TS;
+  ctx.fillStyle = '#160e08'; ctx.fillRect(0, hy, W, H - hy);
+  ctx.fillStyle = '#ff9f1c'; ctx.fillRect(0, hy, W, 2);
+  ctx.font = '9px "Press Start 2P"'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff7a9a'; ctx.fillText('HP', 12, hy + 22);
+  ctx.fillStyle = '#300'; ctx.fillRect(40, hy + 13, 170, 11);
+  ctx.fillStyle = p.hp / p.maxHp > 0.35 ? '#39d98a' : '#ff3355'; ctx.fillRect(40, hy + 13, 170 * Math.max(0, p.hp / p.maxHp), 11);
+  ctx.fillStyle = '#fff'; ctx.fillText(Math.max(0, p.hp) + '/' + p.maxHp, 218, hy + 22);
+  ctx.fillStyle = '#00e5ff'; ctx.fillText('LV ' + p.lvl, 12, hy + 46);
+  ctx.fillStyle = '#0a2a33'; ctx.fillRect(70, hy + 39, 140, 7);
+  ctx.fillStyle = '#00e5ff'; ctx.fillRect(70, hy + 39, 140 * p.xp / p.next, 7);
+  ctx.fillStyle = '#ffcc33';
+  ctx.fillText('ATK ' + atkOf(p) + '   DEF ' + defOf(p), 300, hy + 22);
+  ctx.fillText('🧪 x' + p.potions + '   ' + p.gold + 'g', 300, hy + 46);
+  ctx.fillStyle = '#c9b393';
+  ctx.fillText(WEAPONS[p.weapon].name, 500, hy + 22);
+  ctx.fillText(ARMORS[p.armor].name, 500, hy + 46);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#ff9f1c';
+  ctx.fillText('FLOOR ' + G.floor + '/' + MAX_FLOOR, W - 12, hy + 22);
+}
+
+function update(dt) {
+  time += dt;
+  if (!G) return;
+  for (const f of G.fx) f.t -= dt;
+  G.fx = G.fx.filter(f => f.t > 0);
+  for (const m of G.mons) m.flash = Math.max(0, m.flash - dt);
+  G.p.flash = Math.max(0, G.p.flash - dt);
+}
+
+// ---------- menus ----------
+function buildCamp() {
+  $('c-gold').textContent = '💰 ' + save.gold.toLocaleString() + ' GOLD BANKED';
+  const box = $('c-items'); box.innerHTML = '';
+  for (const k of Object.keys(UPG)) {
+    const u = UPG[k], lvl = save.upg[k], cost = u.costs[lvl];
+    const el = document.createElement('div'); el.className = 'item';
+    el.innerHTML = `<div class="ic">${u.icon}</div><div class="nm">${u.name}</div><div class="pips">${'■'.repeat(lvl)}${'□'.repeat(5 - lvl)}</div><div class="ef">${u.eff(lvl)}</div>`;
+    const b = document.createElement('button'); b.className = 'b gold';
+    b.textContent = cost === undefined ? 'MAXED' : cost + ' GOLD';
+    b.disabled = cost === undefined || save.gold < cost;
+    b.addEventListener('click', () => { save.gold -= cost; save.upg[k]++; writeSave(); ensureAudio(); sfx.level(); buildCamp(); });
+    el.append(b); box.append(el);
+  }
+}
+function showMenu() {
+  state = 'menu'; G = null;
+  for (const id of ['camp', 'over']) $(id).classList.add('hidden');
+  $('m-stats').innerHTML = '💰 ' + save.gold + ' GOLD · DEEPEST FLOOR ' + save.best + (save.wins ? ' · ★ CONQUERED x' + save.wins : '');
+  $('menu').classList.remove('hidden');
+}
+function startRun() { ensureAudio(); for (const id of ['menu', 'camp', 'over']) $(id).classList.add('hidden'); newRun(); state = 'play'; }
+$('b-play').addEventListener('click', startRun);
+$('b-camp').addEventListener('click', () => { buildCamp(); $('camp').classList.remove('hidden'); });
+$('c-back').addEventListener('click', () => { $('camp').classList.add('hidden'); if (state === 'over') $('over').classList.remove('hidden'); else showMenu(); });
+$('o-retry').addEventListener('click', startRun);
+$('o-camp').addEventListener('click', () => { $('over').classList.add('hidden'); buildCamp(); $('camp').classList.remove('hidden'); });
+$('o-menu').addEventListener('click', showMenu);
+
+// ---------- input ----------
+const DIRS = { ArrowUp: [0, -1], KeyW: [0, -1], ArrowDown: [0, 1], KeyS: [0, 1], ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] };
+let lastKeyAct = 0;
+window.addEventListener('keydown', e => {
+  if (DIRS[e.code] || e.code === 'Space') e.preventDefault();
+  if (state !== 'play') return;
+  const now = performance.now();
+  if (e.repeat && now - lastKeyAct < 110) return;
+  lastKeyAct = now;
+  if (DIRS[e.code]) act(...DIRS[e.code]);
+  else if (e.code === 'Space' || e.code === 'Period') act(0, 0);
+  else if (e.code === 'KeyQ' || e.code === 'Digit1') drinkPotion();
+});
+// Tap/click the map: step one tile toward that side of the hero.
+cv.addEventListener('pointerdown', e => {
+  if (state !== 'play') return;
+  const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+  if (y > VH * TS) return;
+  const p = G.p, camX = Math.max(0, Math.min(MW - VW, p.x - (VW >> 1))), camY = Math.max(0, Math.min(MH - VH, p.y - (VH >> 1)));
+  const dx = x - ((p.x - camX) * TS + TS / 2), dy = y - ((p.y - camY) * TS + TS / 2);
+  if (Math.abs(dx) < TS / 2 && Math.abs(dy) < TS / 2) return act(0, 0);
+  if (Math.abs(dx) > Math.abs(dy)) act(Math.sign(dx), 0); else act(0, Math.sign(dy));
+});
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
+let padTimer = null;
+document.querySelectorAll('#pad button').forEach(b => {
+  const [dx, dy] = b.dataset.d.split(',').map(Number);
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); act(dx, dy);
+    clearInterval(padTimer);
+    if (dx || dy) padTimer = setInterval(() => act(dx, dy), 170);
+  });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => clearInterval(padTimer));
+});
+$('t-potion').addEventListener('pointerdown', e => { e.preventDefault(); drinkPotion(); });
+$('t-wait').addEventListener('pointerdown', e => { e.preventDefault(); act(0, 0); });
+window.addEventListener('blur', () => clearInterval(padTimer));
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+showMenu();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
