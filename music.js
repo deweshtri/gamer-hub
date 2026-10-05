@@ -25,6 +25,7 @@
     ninja:   { bpm: 150, root: 57, scale: 'hirajoshi', prog: [[0, 'm'], [8, 'M'], [7, 'm'], [0, 'm']], k: 'x.....x...x.....', s: '....x.......x.x.', h: 'x.xxx.xxx.xxx.xx', bass: 'r.r.o...r.r.o.r.', arp: '0.2.1.2.0.2.1.2.', lead: 'square', arpW: 'triangle', dens: 0.5 },
     tower:   { bpm: 104, root: 50, scale: 'harmMinor', prog: [[0, 'm'], [8, 'M'], [5, 'm'], [7, 'M']], k: 'x.......x.......', s: '....x.x.....x.xx', h: '................', bass: 'r...r...o...r.r.', arp: '', lead: 'square', arpW: 'square', dens: 0.45, pad: true },
     cyber:   { bpm: 124, root: 53, scale: 'minor', prog: [[0, 'm'], [0, 'm'], [8, 'M'], [7, 'm']], k: 'x...x...x...x...', s: '....x.......x...', h: '..x...x...x.x.x.', bass: 'r.rr.r.rr.r.rr.r', arp: '0.0.1.0.2.0.1.0.', lead: 'triangle', arpW: 'square', dens: 0.25 },
+    space:   { bpm: 136, root: 55, scale: 'minor', prog: [[0, 'm'], [8, 'M'], [3, 'M'], [10, 'M']], k: 'x...x...x...x...', s: '....x.......x...', h: '..x...x...x.x.x.', bass: 'r.ror.ror.ror.ro', arp: '0121312101213121', lead: 'sawtooth', arpW: 'square', dens: 0.45 },
     fishing: { bpm: 92, root: 62, scale: 'majPent', prog: [[0, 'M'], [5, 'M'], [9, 'm'], [7, 'M']], k: 'x.......x.......', s: '................', h: '....x.......x...', bass: 'r.....o.r.....o.', arp: '0.1.2.1.0.1.2.1.', lead: 'triangle', arpW: 'triangle', dens: 0.35, pad: true },
   };
   const T = THEMES[theme] || THEMES.sky;
